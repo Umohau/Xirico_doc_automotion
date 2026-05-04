@@ -309,7 +309,7 @@ class RepositorioOperadores(Operacoes):
             EntityNotFoundError: se nenhum operador for encontrado com o id fornecido
             
         """
-        actualizar= self.tabela.update().where(sa.end_(self.tabela.c.id==id, self.tabela.c.ativo==True)
+        actualizar= self.tabela.update().where(sa.end_(self.tabela.c.id==id, self.tabela.c.ativo==True)) 
         actualizar=actualizar.values(dados)
     
         with self.engine.begin() as conexao:
@@ -391,7 +391,7 @@ class RepositorioOperadores(Operacoes):
         busca= sa.select(self.tabela)
         busca=busca.where(sa.and_(
         self.tabela.c.nome.ilike(f'%{nome}%'),
-        self.tabela.c.ativo=True))
+        self.tabela.c.ativo==True))
         
         with self.engine.begin() as conexao:
             res=conexao.execute(busca)
@@ -420,7 +420,7 @@ class RepositorioOperadores(Operacoes):
         """
         busca= sa.select(self.tabela).where(sa.and_(
         self.tabela.c.email==email,
-        self.tabela.c.ativo==True)
+        self.tabela.c.ativo==True)) 
         
         with self.engine.begin() as conexao:
             res=conexao.execute(busca)
