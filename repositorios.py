@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 import abc
 import logging
-from definicoes import Conector, EntityNotFoundError, DuplicateError, EmptyTableError, Inicializador
+from infra import Conector, EntityNotFoundError, DuplicateError, EmptyTableError, InfraBanco
 
 logger1= logging.getLogger(__name__)
 logging.basicConfig(
