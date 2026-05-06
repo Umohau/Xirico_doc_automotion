@@ -113,8 +113,24 @@ class Gerador:
         self._documento=Documento()
         self._base=InfraGerador().base
         self._caminho_gerado=self._base/"documentos gerados"
+
         
+    def gerar_pedido_quota(self, dados:dict) -> Path:
+        nome=f"ped_quota{dados.get('data')}"
+        caminho_modelo=str(self._base/modelos/"ped_quota_template.docx")
+        caminho_nova_quota=self._caminho_gerado/"pedido_quota"/nome
         
+        #carrega modelo
+        modelo_quota= self._documento.carregar_modelo(caminho_modelo)
+        
+        #preenche modelo
+        novo_pedido_quota= self._documento.preencher(modelo_quota, dados)
+        
+        #salva novo pedido de quota
+        self._documento.salvar(novo_pedido_quota, str(caminho_nova_quota))
+        return caminho_nova_quota    
+
+
     def gerar_recibo(self, dados: dict)->Path:
         nome=f"recibo{dados.get('data')}.docx" #nome dos recibos gerados
         caminho_modelo=self._base/modelos/"recibo_template.docx"
