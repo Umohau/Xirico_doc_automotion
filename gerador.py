@@ -115,15 +115,15 @@ class Gerador:
         self._caminho_gerado=self._base/"documentos gerados"
         
         
-    def gerar_recibo(self, dados: dict):
-        nome=f"recibo{dados.get("data")}.docx" #nome dos recibos gerados
+    def gerar_recibo(self, dados: dict)->Path:
+        nome=f"recibo{dados.get('data')}.docx" #nome dos recibos gerados
         caminho_modelo=self._base/modelos/"recibo_template.docx"
         caminho_novo_recibo= self._caminho_gerado/"recibos"/nome
         
         #carregando modelo
-        modelo_rec=self._documento.carregar_modelo(caminho_modelo)
+        modelo_rec=self._documento.carregar_modelo(str(caminho_modelo))
         #preenchendo modelo
         documento_gerado=self._documento.preencher(modelo_rec, dados)
         #salvando novo recibo
-        self._documento.salvar(documento_gerado, caminho_novo_recibo)
-        
+        self._documento.salvar(documento_gerado, str(caminho_novo_recibo))
+        return caminho_novo_recibo
