@@ -6,9 +6,7 @@ from infra import logger
 
 
 class Documento:
-    def __init__(self):
-        pass
-        
+    
     def carregar_modelo(self, caminho:str) ->DocxTemplate:
         """
         Verifica se o arquivo existe no caminho fornecido no init.
