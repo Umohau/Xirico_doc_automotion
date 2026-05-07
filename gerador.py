@@ -114,7 +114,20 @@ class Gerador:
         self._base=InfraGerador().base
         self._caminho_gerado=self._base/"documentos gerados"
 
+        def gerar_pedido_licenca(self, dados:dict) ->Path:
+        nome=f"pedido_licenca_{dados.get('data')}.docx"
+        caminho_modelo= str(self._base/modelos/"pedido_licenca_template.docx")
+        caminho_novo_pedido= self._base/self._caminho_gerado/"pedidos_licenca"/nome
         
+        #carrega modelo para preenchimento
+        modelo=self._documento.carregar_modelo(caminho_modelo)
+        
+        #preenche o modelo
+        documento_gerado= self._documento.preencher(modelo, dados)
+        
+        #salva o documento gerado
+        self.documenro.salvar(documento_gerado,str( caminho_novo_pedido))
+        return  caminho_novo_pedido   
     def gerar_pedido_quota(self, dados:dict) -> Path:
         nome=f"ped_quota{dados.get('data')}"
         caminho_modelo=str(self._base/modelos/"ped_quota_template.docx")
