@@ -147,8 +147,8 @@ class Gerador:
         
 
     def gerar_pedido_quota(self, dados:dict) -> Path:
-        nome=f"ped_quota{dados.get('data')}"
-        caminho_modelo=str(self._base/modelos/"ped_quota_template.docx")
+        nome=f"ped_quota{dados.get('data')}.docx"
+        caminho_modelo=str(self._base/"modelos"/"ped_quota_template.docx")
         caminho_nova_quota=self._caminho_gerado/"pedido_quota"/nome
         
         #carrega modelo para preechimento
@@ -164,7 +164,7 @@ class Gerador:
        
     def gerar_pedido_licenca(self, dados:dict) ->Path:
         nome=f"pedido_licenca_{dados.get('data')}.docx"
-        caminho_modelo= str(self._base/modelos/"pedido_licenca_template.docx")
+        caminho_modelo= str(self._base/"modelos"/"pedido_licenca_template.docx")
         caminho_novo_pedido= self._base/self._caminho_gerado/"pedidos_licenca"/nome
         
         #carrega modelo para preenchimento
@@ -180,7 +180,7 @@ class Gerador:
         
     def gerar_pedido_certif_origem(self, dados:dict) ->Path:
         nome=f"pedido_certf_origem_{dados.get('data')}.docx"
-        caminho_modelo= str(self._base/modelos/"pedido_certf_origem_template.docx")
+        caminho_modelo= str(self._base/"modelos"/"pedido_certf_origem_template.docx")
         caminho_novo_pedido= self._base/self._caminho_gerado/"certificados_origem_P"/nome
         
         #carrega modelo para preenchimento
@@ -196,7 +196,7 @@ class Gerador:
         
     def gerar_pedido_declar_noncites(self, dados:dict) ->Path:
         nome=f"pedido_decla_noncites_{dados.get('data')}.docx"
-        caminho_modelo= str(self._base/modelos/"pedido_decla_noncites_template.docx")
+        caminho_modelo= str(self._base/"modelos"/"pedido_decla_noncites_template.docx")
         caminho_novo_pedido= self._base/self._caminho_gerado/"declaracoes_non_cites_P"/nome
         
         #carrega modelo para preenchimento
@@ -211,7 +211,7 @@ class Gerador:
     
     def gerar_pedido_certif_sanitario(self, dados:dict) ->Path:
         nome=f"pedido_certif_sanitario_{dados.get('data')}.docx"
-        caminho_modelo= str(self._base/modelos/"pedido_certif_sanitario_template.docx")
+        caminho_modelo= str(self._base/"modelos"/"pedido_certif_sanitario_template.docx")
         caminho_novo_pedido= self._base/self._caminho_gerado/"certificados_sanitarios_P"/nome
         
         #carrega modelo para preenchimento
