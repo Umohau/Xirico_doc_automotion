@@ -39,6 +39,20 @@ class Documento:
             raise 
     
     
+    def   mostrar_campos(self, caminho:Path) -> dict:
+        """
+        pega todos os campos(marcadores/templates) do modelo.
+        
+        Args:
+            caminho(Path): caminho absoluto do arquivo modelo.
+            
+        Returns:
+            dict: dicionario com os nomes dos templates/campos
+        """
+        modelo=self.carregar_modelo(caminho)
+        campos= modelo.get_undeclared_template_variables()
+        return campos
+        
         
     def preencher(self,modelo: DocxTemplate, dados:dict) -> object:
         """
@@ -163,6 +177,7 @@ class Gerador:
         self.documenro.salvar(documento_gerado,str( caminho_novo_pedido))
         return  caminho_novo_pedido
         
+        
     def gerar_pedido_certif_origem(self, dados:dict) ->Path:
         nome=f"pedido_certf_origem_{dados.get('data')}.docx"
         caminho_modelo= str(self._base/modelos/"pedido_certf_origem_template.docx")
@@ -209,17 +224,5 @@ class Gerador:
         self.documenro.salvar(documento_gerado,str( caminho_novo_pedido))
         return  caminho_novo_pedido
         
-g=Gerador()
-dados={
-    'nome':'joao',
-    'endereco':'yuen po street birds garden kwoloon hong kong',
-    'quantidade' : 1200,
-    'caixas':8,
-    'quantidade_caixa':120,
-    'peso':92,
-    'dimencoes': '20x92x71',
-    'preco':'15' ,
-    'preco_tot':15000,
-    'data':'2000-62'
-        }
-g.gerar_recibo(dados)
+    
+                
