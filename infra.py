@@ -117,12 +117,17 @@ class DuplicateError(Exception):
     
 class EmptyTableError(Exception):
     pass
+    
+class PermissionDeniedError(Exception):
+    pass
 
 
 #infra-estrutura do gerador
 class InfraGerador:
     def __init__(self):
         self._base= self.localizar_app()
+        self.inicialisar_caminhos()
+        
         
     @property
     def base(self):
@@ -155,5 +160,4 @@ class InfraGerador:
             except OSError as e: 
                logger.error("erro ao inicializar caminhos. ERRO: %s", e.errno)
                raise
-i=InfraGerador()
-i.inicialisar_caminhos()
+
