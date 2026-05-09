@@ -9,7 +9,7 @@ logging.basicConfig(format= '%(levelname)s: %(message)s  %(asctime)s',
 
 class ServicoCliente:
     def __init__(self, repo_cliente:RepositorioClientes, repo_operador:RepositorioOperadores):
-        self._repo_cliente=repo_operador
+        self._repo_cliente=repo_cliente
         self._repo_operador=repo_operador
         
     
