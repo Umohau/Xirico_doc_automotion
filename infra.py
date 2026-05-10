@@ -165,12 +165,13 @@ class InfraGerador:
 
                
 class InfraAuditoria:
-    self._base= localizar_app()  
+    def __init__(self):
+        self._base= localizar_app()  
     
     def criar_pasta(self):
         try:
                 (self._base/'aud').mkdir(parents=True, exist_ok=True)
-            except OSError as e: 
+        except OSError as e: 
                logger.error("erro ao criar pasta de auditoria. ERRO: %s", e.errno)
                raise
-        
+  
