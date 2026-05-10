@@ -10,7 +10,19 @@ logging.basicConfig(
     level= logging.DEBUG
     )
     
-    
+   
+def localizar_app():
+        """
+        Obtem a base ou caminho onde o programa esta rodando
+        
+        Returns:
+            Path: o caminho absoluto onde o pregrama esta rodando em objeto Path
+        """
+        if getattr(sys, 'frozen', False):
+            return Path(sys.executable).parent
+        return Path(__file__).parent
+ 
+       
 #conector     
 class  Conector:
     """
@@ -125,25 +137,14 @@ class PermissionDeniedError(Exception):
 #infra-estrutura do gerador
 class InfraGerador:
     def __init__(self):
-        self._base= self.localizar_app()
+        self._base= localizar_app()
         self.inicialisar_caminhos()
         
         
     @property
     def base(self):
         return self._base
-        
-    def localizar_app(self):
-        """
-        Obtem a base ou caminho onde o programa esta rodando
-        
-        Returns:
-            Path: o caminho absoluto onde o pregrama esta rodando em objeto Path
-        """
-        if getattr(sys, 'frozen', False):
-            return Path(sys.executable).parent
-        return Path(__file__).parent
-    
+
     
     def inicialisar_caminhos(self):
         caminhos=[
@@ -151,7 +152,8 @@ class InfraGerador:
             'certificados_sanitarios_P',
             'declaracaoes_non_cites_P',
             'certificados_origem_P',
-            'pedidos_licenca', 'pedido_quota'
+            'pedidos_licenca', 
+            'pedido_quota'
               ]
         
         for caminho in caminhos:
@@ -160,4 +162,4 @@ class InfraGerador:
             except OSError as e: 
                logger.error("erro ao inicializar caminhos. ERRO: %s", e.errno)
                raise
-
+               
