@@ -1,4 +1,9 @@
 import bcrypt
+import sys
+import json
+from pathlib import Path
+from datetime import datetime
+
 
 class SegSenha:
     @staticmethod
@@ -35,3 +40,39 @@ class SegSenha:
 
 #instancia global da classe Segsenha
 segsenha=SegSenha()
+
+
+class Auditoria:
+    def __init__(self):
+        self._nome=f"registro_{datetime.now().strftime('%d_%m_%Y')}.jsonl"
+        self._base= self.localizar_app()
+        self._arquivo=self._base/"aud"/self._nome
+        
+    def localizar_app(self):
+        """
+        Obtem a base ou caminho onde o programa esta rodando
+        
+        Returns:
+            Path: o caminho absoluto onde o pregrama esta rodando em objeto Path
+        """
+        if getattr(sys, 'frozen', False):
+            return Path(sys.executable).parent
+        return Path(__file__).parent
+        
+        
+    def auditar(self, operador, operacao, detalhes=''):
+        dados= {
+            "operador_id":operador,
+            "operacao": operacao,
+            "detalhes_operacao": detalhes,
+            "timestamp": datetime.now().strftime("%d_%m_%YT%H:%M:%S")
+        }
+        
+        try:
+            with open(self._arquivo, "x", encoding="utf-8") as registro:
+                json.dump(dados , registro)
+                registro.write("\n")
+        except FileExistsError:
+            with open(self._arquivo, "a", encoding= "utf-8") as registro:
+                json.dump(dados, registro)
+                registro.write("\n")
