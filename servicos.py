@@ -83,18 +83,23 @@ class ServicoCliente:
          
     def pesquisar_clientes(self,operador_id,termo=None):
         """
-        pesquisa por clientes no repositorio clientes.
+        pesquisa por clientes no repositorio clientes e registra logs de auditoria.
         
         Args:
             operador_id(int): id do operador.
             termo(int| str| None): termo a ser pesquisado:
-                se for "int" a pesquisa busca por id.
-                se for "str" a pesquisa busca por nome.
-                se for "None" a pesquisa busca todos os clientes.
+                -se for "int" a pesquisa busca por id.
+                -se for "str" a pesquisa busca por nome (parcial).
+                -se for "None" a pesquisa busca todos os clientes.
 
         Returns:
-            dict: se a busca for por id ou nome.retorna dicionario com os dados da busca
-            list[dict]: se a pesquisa buscar tudo.
+            dict: se a busca for por id -retorna dicionario com os dados do cliente.
+            list[dict]: se a pesquisa buscar tudo,ou nome parcial - lista de dicionarios com os dados do cliente.
+        
+        Raises:
+            EntityNotFoundError: se a busca por nome ou id nao nao encontrar clientes que correspondam.
+            EmptyTableError: se a busca por todos nao encontrar clientes.
+            TypeError: se o tipo do termo nao for str, int ou None.
         """
         if isinstance(termo, int):
             auditoria.auditar(
@@ -115,6 +120,8 @@ class ServicoCliente:
                 operacao="pesquisar_clientes",
                 detalhes=f"pesquisou por todos os clientes")
             return self._repo_cliente.buscar_tudo()
+        else:
+            raise TypeError("valor do argumento 'termo' invalido")
             
 
 
