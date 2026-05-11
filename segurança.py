@@ -78,7 +78,7 @@ class Auditoria:
                 registro.write("\n")
         
                 
-    def historico_diario(self, operador_id):
+    def historico_hoje(self, operador_id):
         historico=list()
         with open(self._arquivo, "r", encoding="utf-8") as arquivo:
                 for linha in arquivo:
@@ -88,6 +88,5 @@ class Auditoria:
                             historico.append(registros)
         return historico
         
-        
-  
-)
+
+   
