@@ -38,9 +38,6 @@ class SegSenha:
         pin= senha.encode("utf-8")
         return bcrypt.checkpw(pin, senha_armazenada)
 
-#instancia global da classe Segsenha
-segsenha=SegSenha()
-
 
 class Auditoria:
     def __init__(self):
@@ -99,3 +96,8 @@ class Auditoria:
                     registro= json.loads(linha)
                     historico.append(registro)
         return historico
+
+
+#instancias globais das classes sem dependencia externa para facilitar acesso
+segsenha=SegSenha() # da classe SegSenha
+auditoria=Auditoria() # da classe Auditoria
