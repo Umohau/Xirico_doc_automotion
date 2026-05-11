@@ -89,4 +89,13 @@ class Auditoria:
         return historico
         
 
-   
+    def historico_diario(self, operador_id,data:str ) -> list[dict] :
+        historico=list()
+        ficheiro= self._base/"aud"/f"registro_{data}.jsonl"
+        
+        with open(ficheiro, "r", encoding="utf-8") as  arquivo:
+            for linha in arquivo:
+                if linha.strip():
+                    registro= json.loads(linha)
+                    historico.append(registro)
+        return historico
