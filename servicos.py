@@ -1,4 +1,5 @@
 import logging
+from segurança import auditoria
 from repositorios import RepositorioClientes, RepositorioAves, RepositorioOperadores
 from infra import DuplicateError,PermissionDeniedError, EntityNotFoundError, InfraBanco, Conector
 
@@ -15,7 +16,7 @@ class ServicoCliente:
     
     def adicionar_cliente(self, dados:dict, operador_id:int) -> int:
         """
-        Adiciona um novo cliente, com restricao a restricao so operadores ADM podem adicionar novos clientes
+        Adiciona um novo cliente, com restricao a restricao so operadores ADM podem adicionar novos clientes, e registra a operacao em logs de auditoria.
         
         Args:
             dados(dict): dicionario com os dados do cliente.
@@ -32,17 +33,51 @@ class ServicoCliente:
             operador= self._repo_operador. buscar_id(operador_id)
         except EntityNotFoundError:
             logger.warning("PERMISSAO NEGADA: tentativa de adicionar cliente pelo operador id:%d-Nao encontrado.", operador_id)
-            raise PermissionDeniedError("nao tem permissao para efectuar esta accao")
+            logger.critical("falha critica na seguranca um operador inexistente tentou eliminar um cliente")
+            raise
             
         if not operador["ADM"]:
                 logger.warning("PERMISSAO NEGADA: tentativa de adicionar cliente pelo operador id:%d.", operador_id)
                 raise PermissionDeniedError("nao tem permissao para efectuar esta accao")
       
         try:
-           return self._repo_cliente.inserir(dados)
+           novo_id=self._repo_cliente.inserir(dados)
+           auditoria.auditar(operador_id,"adiconar_cliente", f" adicionou um novo cliente com id:{novo_id}")
+           return novo_id
         except DuplicateError as e:
             raise DuplicateError("ja existe um cliente com email, telefone ou dominio fornecudos" )
             
 
- 
+    def eliminar_cliente(self, operador_id:int, cliente_id: int) -> None:
+      """
+      Elimina um cliente , com a restricao de que so operadores ADM podem eliminar clientes, e registra a operacao em logs de auditoria.
       
+      Args:
+          operador_id(int): id do operador que executa a accao.
+          cliente_id(int): id do cliente a ser eliminado.
+          
+      Returns:
+          None
+          
+      Raises:
+          EntityNotFoundError: se o cliente nao for encontrado.
+          PermissionDeniedError: se o operador nao for ADM
+      """
+      
+      #verifica se o operador existe e se e ADM
+      try:
+          operador= self._repo_operador.buscar_id(operador_id)
+      except EntityNotFoundError:
+          logger.critical("falha critica na seguranca um operador inexistente tentou eliminar um cliente")
+          raise
+      if not operador["ADM"]:
+          logger.info("PERMICAO NEGADA: o operaor id: %d tentou eliminar o cliente id:%d", operador_id, cliente_id)
+          raise PermissionDeniedError("somente ADM pode eliminar clientes")
+          
+      # elimina o cliente
+      try:
+        self._repo_cliente.deletar(cliente_id)
+        auditoria.auditar(operador_id, "eliminar_cliente", f"eliminou o cliente com id:{cliente_id}")
+      except EntityNotFoundError:
+         raise
+         
