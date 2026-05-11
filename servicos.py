@@ -81,7 +81,7 @@ class ServicoCliente:
       except EntityNotFoundError:
          raise
          
-    def pesquisar_clientes(self,operador_id,termo=None):
+    def pesquisar_clientes(self,operador_id: int, termo: int|str=None) -> dict|list[dict]:
         """
         pesquisa por clientes no repositorio clientes e registra logs de auditoria.
         
@@ -124,4 +124,28 @@ class ServicoCliente:
             raise TypeError("valor do argumento 'termo' invalido")
             
 
+    def actualizar_cliente(self, operador_id:int, cliente_id:int,  dados: dict) -> list:
+        """
+        Actualisa os dados de um cliente e regstra um log de auditoria.
+        
+        Args:
+            operador_id(int): id do operador.
+            cliente_id(int): id do cliente alvo.
+            dados(dict): dicionario com campos a serem actualizados e novos dados.
+        
+        Returns:
+            list: lista com os campos actualizados.
+            
+        Raises:
+            EntityNotFoundError: se o cliente alvo nao for encontrado.
+            
+        """
+        campos=self._repo_cliente.actualizar(cliente_id, dados)
+        auditoria.auditar(
+            operador_id,
+            operacao= "actualizar_cliente",
+            detalhes=f"actualizou os dados do cliente id:{cliente_id}. nos campos: {campos}"
+        )
+        return campos
+        
 
