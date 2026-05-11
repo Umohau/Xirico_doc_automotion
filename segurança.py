@@ -76,3 +76,18 @@ class Auditoria:
             with open(self._arquivo, "a", encoding= "utf-8") as registro:
                 json.dump(dados, registro)
                 registro.write("\n")
+        
+                
+    def historico_diario(self, operador_id):
+        historico=list()
+        with open(self._arquivo, "r", encoding="utf-8") as arquivo:
+                for linha in arquivo:
+                    if linha.strip():
+                        registros=json.loads(linha)
+                        if registros["operador_id"]==operador_id:
+                            historico.append(registros)
+        return historico
+        
+        
+  
+)
