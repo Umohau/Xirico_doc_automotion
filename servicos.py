@@ -81,3 +81,40 @@ class ServicoCliente:
       except EntityNotFoundError:
          raise
          
+    def pesquisar_clientes(self,operador_id,termo=None):
+        """
+        pesquisa por clientes no repositorio clientes.
+        
+        Args:
+            operador_id(int): id do operador.
+            termo(int| str| None): termo a ser pesquisado:
+                se for "int" a pesquisa busca por id.
+                se for "str" a pesquisa busca por nome.
+                se for "None" a pesquisa busca todos os clientes.
+
+        Returns:
+            dict: se a busca for por id ou nome.retorna dicionario com os dados da busca
+            list[dict]: se a pesquisa buscar tudo.
+        """
+        if isinstance(termo, int):
+            auditoria.auditar(
+                operador_id,
+                operacao="pesquisar_clientes",
+                detalhes=f"pesquisou pelo cliente id:{termo}")
+            return self._repo_cliente.buscar_id(termo)
+        
+        elif isinstance(termo, str):
+            auditoria.auditar(
+                operador_id,
+                operacao="pesquisar_clientes",
+                detalhes=f"pesquisou pelo cliente com  nome parecido a :{termo}")
+            return self._repo_cliente.buscar_nome(termo)
+        elif not termo:
+            auditoria.auditar(
+                operador_id,
+                operacao="pesquisar_clientes",
+                detalhes=f"pesquisou por todos os clientes")
+            return self._repo_cliente.buscar_tudo()
+            
+
+
