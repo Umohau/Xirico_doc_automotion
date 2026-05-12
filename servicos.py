@@ -149,3 +149,44 @@ class ServicoCliente:
         return campos
         
 
+class ServicoOperador:
+    def __init__(self, repo_operador:RepositorioOperadores):
+        self._repo_operador=repo_operador
+        
+    def adicionar_operador(self, operador_id, dados):
+        """
+        Adiciona um novo operador ao repositorio e registra auditoria.
+        
+        Args:
+            operador_id(int): id do operador que executa a adicao.
+            dados(dict): dicionario de dados do novo operador.
+            
+        Returns:
+            int: id do operador adicionado
+            
+        Raises:
+            DuplicateError: se existir operador com os dados fornecidos.
+        """
+        
+        # verifica se operador que esta chamando o metodo existe
+        try:
+            operador=self._repo_operador.buscar_id(operador_id)
+        except EntityNotFoundError:
+            logger.critical("falha critica na seguranca um operador inexistente tentou adicionar um novo cliente.")
+            raise
+        
+        # verifica se o operador é ADM
+        if not operador["ADM"] :
+            logger.warning("PERMISSAO NEGADA: o perador id:%d tentou inserir um novo operador", operador_id)
+            raise PermissionDeniedError("somente ADM pode adicionar novos operadores")
+            
+        # insere os dados do novo operador no repositorio
+        novo_id=self._repo_operador.inserir(dados) 
+        
+        #registra o log de audiroria
+        auditoria.auditar(
+           operador_id,
+           operacao= "adicionar_operador",
+           detalhes= f"adicionou o operador id: {novo_id}")
+        return novo_id
+        
