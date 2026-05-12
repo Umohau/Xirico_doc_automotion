@@ -7,7 +7,29 @@ logger= logging.getLogger(__name__)
 logging.basicConfig(format= '%(levelname)s: %(message)s  %(asctime)s',
    datefmt= '%H:%M',
    level=logging.DEBUG)
-
+   
+class permissaoMixIn:
+    @property  
+    def permissao(self,repo_operador:RepositorioOperadores, id_operador: int, operacao:str):
+        
+        #verifica se operdor existe
+        try:
+            operador= repo_operador. buscar_id(operador_id)
+        except EntityNotFoundError:
+            logger.critical("falha critica na seguranca um operador inexistente tentou %s", operacao)
+            return False
+        
+        # verifica se operdor é ADM
+        if not operador["ADM"]:
+                logger.warning("PERMISSAO NEGADA: tentativa de %s pelo operador id:%d.", operacao, id_operador)
+                return False
+        return True
+            
+            
+        
+        
+        
+        
 class ServicoCliente:
     def __init__(self, repo_cliente:RepositorioClientes, repo_operador:RepositorioOperadores):
         self._repo_cliente=repo_cliente
@@ -190,3 +212,5 @@ class ServicoOperador:
            detalhes= f"adicionou o operador id: {novo_id}")
         return novo_id
         
+
+   
