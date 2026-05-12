@@ -44,7 +44,7 @@ class PermissaoMixIn:
         
         
         
-class ServicoCliente(PermissoMixIn):
+class ServicoCliente(PermissaoMixIn):
     def __init__(self, repo_cliente:RepositorioClientes, repo_operador:RepositorioOperadores):
         self._repo_cliente=repo_cliente
         self._repo_operador=repo_operador
@@ -64,20 +64,17 @@ class ServicoCliente(PermissoMixIn):
         Raises:
             PermissionDeniedError: se o operador nao for ADM
             DuplicateError: se ja existir um cliente com os dados fornecidos(email, telefone, dominio)
+            EntityNotFoundError: se o operador que chamou o metodo nao existir.
         """
-        if 
-            raise 
-            
-        if permissao==False:
-                raise PermissionDeniedError("nao tem permissao para efectuar esta accao")
-      
-        try:
-           novo_id=self._repo_cliente.inserir(dados)
-           auditoria.auditar(operador_id,"adiconar_cliente", f" adicionou um novo cliente com id:{novo_id}")
-           return novo_id
-        except DuplicateError as e:
-            raise DuplicateError("ja existe um cliente com email, telefone ou dominio fornecudos" )
-            
+        
+        if self.permissao(self._repo_operador, operador_id, "adicionar_cliente"):
+            try:
+               novo_id=self._repo_cliente.inserir(dados)
+               auditoria.auditar(operador_id,"adiconar_cliente", f" adicionou um novo cliente com id:{novo_id}")
+               return novo_id
+            except DuplicateError as e:
+                raise DuplicateError("ja existe um cliente com email, telefone ou dominio fornecudos" )
+        raise PermissionDeniedError("Apenas ADM pode adicionar novos clientes")
 
     def eliminar_cliente(self, operador_id:int, cliente_id: int) -> None:
       """
@@ -221,5 +218,3 @@ class ServicoOperador:
            detalhes= f"adicionou o operador id: {novo_id}")
         return novo_id
         
-
-   
