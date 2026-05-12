@@ -8,19 +8,33 @@ logging.basicConfig(format= '%(levelname)s: %(message)s  %(asctime)s',
    datefmt= '%H:%M',
    level=logging.DEBUG)
    
-class permissaoMixIn:
-    @property  
+class PermissaoMixIn:
+    
     def permissao(self,repo_operador:RepositorioOperadores, id_operador: int, operacao:str):
+        """
+        verifica se o operador existe e se existir verifica se é ADM
+        
+        Args:
+            repo_operador(object): instancia de RepositorioOperadores.
+            id_operador: id do operador a ser verificado.
+            operacao(str): nome da operacao que o operador pretende realizar.
+            
+        Returns:
+            bool: True se existir e for ADM. False se existir mas nao for ADM
+            
+        Raises:
+            EntityNotFoundError: se o operador nao existir
+        """
         
         #verifica se operdor existe
         try:
-            operador= repo_operador. buscar_id(operador_id)
+            operador= repo_operador. buscar_id(id_operador)
         except EntityNotFoundError:
-            logger.critical("falha critica na seguranca um operador inexistente tentou %s", operacao)
-            return False
+            logger.warning("operador inexistente tentou %s", operacao)
+            raise
         
         # verifica se operdor é ADM
-        if not operador["ADM"]:
+        if not operador.get("ADM"):
                 logger.warning("PERMISSAO NEGADA: tentativa de %s pelo operador id:%d.", operacao, id_operador)
                 return False
         return True
@@ -30,7 +44,7 @@ class permissaoMixIn:
         
         
         
-class ServicoCliente:
+class ServicoCliente(PermissoMixIn):
     def __init__(self, repo_cliente:RepositorioClientes, repo_operador:RepositorioOperadores):
         self._repo_cliente=repo_cliente
         self._repo_operador=repo_operador
@@ -51,15 +65,10 @@ class ServicoCliente:
             PermissionDeniedError: se o operador nao for ADM
             DuplicateError: se ja existir um cliente com os dados fornecidos(email, telefone, dominio)
         """
-        try:
-            operador= self._repo_operador. buscar_id(operador_id)
-        except EntityNotFoundError:
-            logger.warning("PERMISSAO NEGADA: tentativa de adicionar cliente pelo operador id:%d-Nao encontrado.", operador_id)
-            logger.critical("falha critica na seguranca um operador inexistente tentou eliminar um cliente")
-            raise
+        if 
+            raise 
             
-        if not operador["ADM"]:
-                logger.warning("PERMISSAO NEGADA: tentativa de adicionar cliente pelo operador id:%d.", operador_id)
+        if permissao==False:
                 raise PermissionDeniedError("nao tem permissao para efectuar esta accao")
       
         try:
