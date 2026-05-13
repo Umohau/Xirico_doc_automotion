@@ -75,7 +75,8 @@ class ServicoCliente(PermissaoMixIn):
             except DuplicateError as e:
                 raise DuplicateError("ja existe um cliente com email, telefone ou dominio fornecudos" )
         raise PermissionDeniedError("Apenas ADM pode adicionar novos clientes")
-
+        
+        
     def eliminar_cliente(self, operador_id:int, cliente_id: int) -> None:
       """
       Elimina um cliente , com a restricao de que so operadores ADM podem eliminar clientes, e registra a operacao em logs de auditoria.
@@ -93,21 +94,25 @@ class ServicoCliente(PermissaoMixIn):
       """
       
       #verifica se o operador existe e se e ADM
-      try:
-          operador= self._repo_operador.buscar_id(operador_id)
-      except EntityNotFoundError:
-          logger.critical("falha critica na seguranca um operador inexistente tentou eliminar um cliente")
-          raise
-      if not operador["ADM"]:
-          logger.info("PERMICAO NEGADA: o operaor id: %d tentou eliminar o cliente id:%d", operador_id, cliente_id)
-          raise PermissionDeniedError("somente ADM pode eliminar clientes")
+      
+      if self.verificacao(self._repo_operador, operador_id, "eliminar_cliente"):
+          try:
+            # elimina o cliente
+            self._repo_cliente.deletar(cliente_id)
+            
+            #registra auditoria
+            auditoria.auditar(
+                operador_id, 
+                "eliminar_cliente",
+                f"eliminou o cliente com id:{cliente_id}")
+            return
+          except EntityNotFoundError:
+             raise
           
-      # elimina o cliente
-      try:
-        self._repo_cliente.deletar(cliente_id)
-        auditoria.auditar(operador_id, "eliminar_cliente", f"eliminou o cliente com id:{cliente_id}")
-      except EntityNotFoundError:
-         raise
+      raise PermissionDeniedError("somente ADM pode eliminar clientes")
+          
+      
+      
          
     def pesquisar_clientes(self,operador_id: int, termo: int|str=None) -> dict|list[dict]:
         """
@@ -177,7 +182,7 @@ class ServicoCliente(PermissaoMixIn):
         return campos
         
 
-class ServicoOperador:
+class ServicoOperador(PermissaoMixIn):
     def __init__(self, repo_operador:RepositorioOperadores):
         self._repo_operador=repo_operador
         
@@ -193,28 +198,29 @@ class ServicoOperador:
             int: id do operador adicionado
             
         Raises:
+            PermissionDeniedError: se operador que chama o metodo nao for ADM
             DuplicateError: se existir operador com os dados fornecidos.
         """
         
-        # verifica se operador que esta chamando o metodo existe
-        try:
-            operador=self._repo_operador.buscar_id(operador_id)
-        except EntityNotFoundError:
-            logger.critical("falha critica na seguranca um operador inexistente tentou adicionar um novo cliente.")
-            raise
-        
+       
+      
         # verifica se o operador é ADM
-        if not operador["ADM"] :
-            logger.warning("PERMISSAO NEGADA: o perador id:%d tentou inserir um novo operador", operador_id)
-            raise PermissionDeniedError("somente ADM pode adicionar novos operadores")
+        if self.permissao(self._repo_operador, operdor_id, "adicionar_operdor"):
+            # insere os dados do novo operador no repositorio
+            novo_id=self._repo_operador.inserir(dados) 
             
-        # insere os dados do novo operador no repositorio
-        novo_id=self._repo_operador.inserir(dados) 
+           #registra o log de audiroria
+            auditoria.auditar(
+               operador_id,
+               operacao= "adicionar_operador",
+               detalhes= f"adicionou o operador id: {novo_id}")
+            
+            return novo_id
+        raise PermissionDeniedError("somente ADM pode adicionar novos operadores")
+            
         
-        #registra o log de audiroria
-        auditoria.auditar(
-           operador_id,
-           operacao= "adicionar_operador",
-           detalhes= f"adicionou o operador id: {novo_id}")
-        return novo_id
+        
+       
+       
+        
         
