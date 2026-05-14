@@ -95,7 +95,7 @@ class ServicoCliente(PermissaoMixIn):
       
       #verifica se o operador existe e se e ADM
       
-      if self.verificacao(self._repo_operador, operador_id, "eliminar_cliente"):
+      if self.permissao(self._repo_operador, operador_id, "eliminar_cliente"):
           try:
             # elimina o cliente
             self._repo_cliente.deletar(cliente_id)
