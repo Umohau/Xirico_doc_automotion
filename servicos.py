@@ -268,4 +268,38 @@ class ServicoOperador(PermissaoMixIn):
         raise PermissionDeniedError("apenas ADM pode pesquisar operadores")
         
         
-        
+    def eliminar_operador(self, operador_id:int, id_alvo: int) -> None:
+      """
+      Faz um sof delete, com a restricao de que so operadores ADM podem eliminar operadores, e registra a operacao em logs de auditoria.
+      
+      Args:
+          operador_id(int): id do operador que executa a accao.
+          id_alvo(int): id do operador a ser eliminado.
+          
+      Returns:
+          None
+          
+      Raises:
+          EntityNotFoundError: se o operador alvo nao for encontrado.
+          PermissionDeniedError: se o operador executor nao for ADM
+      """
+      
+      #verifica se o operador existe e se e ADM
+      
+      if self.permissao(self._repo_operador, operador_id, "eliminar_operador"):
+          try:
+            # elimina o operador
+            logger.debug(f"eliminando operador id {id_alvo}")
+            self._repo_operador.deletar(id_alvo)
+            
+            #registra auditoria
+            auditoria.auditar(
+                operador_id, 
+                "eliminar_operador",
+                f"eliminou o operador com id:{id_alvo}")
+            return
+          except EntityNotFoundError:
+             raise
+          
+      raise PermissionDeniedError("somente ADM pode eliminar operadores")       
+
