@@ -246,7 +246,7 @@ class ServicoOperador(PermissaoMixIn):
                     operacao="pesquisar_operadores",
                     detalhes=f"pesquisou por :{termo}, em operadores.")
                 logger.debug("buscando por id")     
-                return self._repo.operador_.buscar_id(termo)
+                return self._repo_operador.buscar_id(termo)
             
             elif isinstance(termo, str):
                 auditoria.auditar(
@@ -398,3 +398,9 @@ class ServicoOperador(PermissaoMixIn):
         logger.info("sucesso: operador id %d rebaixado ", id_alvo)
         
                 
+URL_CONEXAO="sqlite:///xirico.db"
+CONECTOR= Conector(URL_CONEXAO)
+InfraBanco(CONECTOR)
+a= RepositorioOperadores(CONECTOR)
+ser=ServicoOperador(a)
+ser.pesquisar_operadores(1,4)
