@@ -395,6 +395,6 @@ class ServicoOperador(PermissaoMixIn):
             operacao= "rebaixar_operador",
             detalhes=f"rebaixu o operador id:{id_alvo}."
         )
-        logger.info("sucesso: operador id %d rebaixado", id_alvo)
+        logger.info("sucesso: operador id %d rebaixado ", id_alvo)
         
                 
