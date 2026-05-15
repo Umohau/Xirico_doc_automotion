@@ -345,7 +345,27 @@ class ServicoOperador(PermissaoMixIn):
             detalhes=f"actualizou os dados do operador id:{id_alvo}. nos campos: {campos}"
         )
         return campos
+
+
+    def promover(self):
+        """
+        Promove um operador para ADM, alterdo o  valor do campo ADM pata True.
         
+        Args:
+            operador_id(int): id do operdor que executa a promocao.
+            id_alvo(int): id do operador a ser provido.
+            
+            
+        Return:
+            bool: True se sucesso.
+            
+        
+        Raises:
+            EntityNotFoundError: se o operador alvo nao for encontrado.
+        """
+        dados={"ADM": True}
+
+                
 dados3={'nome': 'umohau', 'ADM': False}  
 dados2={'nome': 'umohau', 'identificacao': '83689772925', 'telefone': '852703882', 'email': 'muhauhara3@gmail.com', 'endereco': 'moamba, matadouro',
 'senha':'muhau333',
