@@ -205,7 +205,7 @@ class ServicoOperador(PermissaoMixIn):
        
       
         # verifica se o operador é ADM
-        if self.permissao(self._repo_operador, operdor_id, "adicionar_operdor"):
+        if self.permissao(self._repo_operador, operador_id, "adicionar_operdor"):
             # insere os dados do novo operador no repositorio
             novo_id=self._repo_operador.inserir(dados) 
             
@@ -303,3 +303,57 @@ class ServicoOperador(PermissaoMixIn):
           
       raise PermissionDeniedError("somente ADM pode eliminar operadores")       
 
+
+    def actualizar_operador(self, operador_id:int, id_alvo:int,  dados: dict) -> list:
+        """
+        Actualisa os dados de um operador e regstra um log de auditoria.
+        Impede a actulizacao dos campos (ADM, id, Identificacao), os novos dados nao podem ser iguais aos antigos.
+        
+        Args:
+            operador_id(int): id do operador executor.
+            id_alvo(int): id do operador a  receber actualizacao.
+            dados(dict): dicionario com campos a serem actualizados e novos dados.
+        
+        Returns:
+            list: lista com os campos actualizados.
+            
+        Raises:
+            KeyError: se dados incluir campos como(identificacao, id)
+            PermissionDeniedError: se dados incluir o campo ADM
+            EntityNotFoundError: se o operador  alvo nao for encontrado.
+            
+        """
+        
+        if not self.permissao(self._repo_operador, operador_id, "actualizar_operador"):
+            if "ADM" in dados.keys():
+                raise PermissionDeniedError("so ADM pode promover operadore.")
+                
+        if "identificacao" in dados.keys() or "id" in dados.keys() :
+            raise KeyError("campo nao sujeito a alteracao.")
+         
+         #Verifica se os dados de actualizacao sao  novos.
+        dados_antigos= self._repo_operador.buscar_id(id_alvo)
+        for campo, valor in dados.items():
+                   if (campo, valor) in dados_antigos.items():
+                       raise ValueError(f"{campo} nao deve ser igual ao antigo") 
+                       
+        #actualiza os dados               
+        campos=self._repo_operador.actualizar(id_alvo, dados)
+        auditoria.auditar(
+            operador_id,
+            operacao= "actualizar_operador",
+            detalhes=f"actualizou os dados do operador id:{id_alvo}. nos campos: {campos}"
+        )
+        return campos
+        
+dados3={'nome': 'umohau', 'ADM': False}  
+dados2={'nome': 'umohau', 'identificacao': '83689772925', 'telefone': '852703882', 'email': 'muhauhara3@gmail.com', 'endereco': 'moamba, matadouro',
+'senha':'muhau333',
+'ADM':True, 'ativo':True}      
+URL_CONEXAO="sqlite:///xirico.db"
+CONECTOR= Conector(URL_CONEXAO)
+InfraBanco(CONECTOR)
+a= RepositorioOperadores(CONECTOR)
+ser=ServicoOperador(a)
+#ser.adicionar_operador(4, dados2)
+ser.actualizar_operador(4,1,dados3)
