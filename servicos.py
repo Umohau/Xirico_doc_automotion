@@ -332,12 +332,14 @@ class ServicoOperador(PermissaoMixIn):
             raise KeyError("campo nao sujeito a alteracao.")
          
          #Verifica se os dados de actualizacao sao  novos.
+        logger.debug("verificando  campos %s" , dados.keys())
         dados_antigos= self._repo_operador.buscar_id(id_alvo)
         for campo, valor in dados.items():
                    if (campo, valor) in dados_antigos.items():
                        raise ValueError(f"{campo} nao deve ser igual ao antigo") 
                        
-        #actualiza os dados               
+        #actualiza os dados 
+        logger.debug("atualizando dados do operador %d", id_alvo)              
         campos=self._repo_operador.actualizar(id_alvo, dados)
         auditoria.auditar(
             operador_id,
@@ -347,7 +349,7 @@ class ServicoOperador(PermissaoMixIn):
         return campos
 
 
-    def promover(self):
+    def promover_operador(self, operador_id, id_alvo):
         """
         Promove um operador para ADM, alterdo o  valor do campo ADM pata True.
         
@@ -364,16 +366,19 @@ class ServicoOperador(PermissaoMixIn):
             EntityNotFoundError: se o operador alvo nao for encontrado.
         """
         dados={"ADM": True}
+        
+        #verifica se é ADM
+        if not self.permissao(self._repo_operador, operador_id, "promover_operador"):
+            raise PermissionDeniedError("somente ADM pode promover operadores")
+        
+        logger.debug("promovendo operador id %d a ADM", id_alvo)
+        self._repo_operador.actualizar(id_alvo, dados)
+        auditoria.auditar(
+            operador_id,
+            operacao= "promover_operador",
+            detalhes=f"promoveu o operador id:{id_alvo}."
+        )
+        logger.info("sucesso: operador id %d promovido", id_alvo)
+        
 
                 
-dados3={'nome': 'umohau', 'ADM': False}  
-dados2={'nome': 'umohau', 'identificacao': '83689772925', 'telefone': '852703882', 'email': 'muhauhara3@gmail.com', 'endereco': 'moamba, matadouro',
-'senha':'muhau333',
-'ADM':True, 'ativo':True}      
-URL_CONEXAO="sqlite:///xirico.db"
-CONECTOR= Conector(URL_CONEXAO)
-InfraBanco(CONECTOR)
-a= RepositorioOperadores(CONECTOR)
-ser=ServicoOperador(a)
-#ser.adicionar_operador(4, dados2)
-ser.actualizar_operador(4,1,dados3)
