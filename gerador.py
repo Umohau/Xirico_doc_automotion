@@ -4,12 +4,10 @@ from infra import InfraGerador
 from docxtpl import DocxTemplate
 from infra import logger
 
-
+InfraGerador()
 
 class Documento:
-    def __init__(self):
-        pass
-        
+    
     def carregar_modelo(self, caminho:str) ->DocxTemplate:
         """
         Verifica se o arquivo existe no caminho fornecido no init.
@@ -225,4 +223,4 @@ class Gerador:
         return  caminho_novo_pedido
         
     
-                
+
