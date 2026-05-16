@@ -350,7 +350,19 @@ class ServicoOperador(PermissaoMixIn):
         )
         return campos
 
-    
+    def mudar_senha(self, operador_id, senha):
+        senha_antiga= self._repo_operador.buscar_id(operador_id)["senha"]
+        logger.debug("verificando se nova senha é igual a antiga")
+        if senha_antiga==senha:
+            raise ValueError("a nova senha deve ser diferente da anterior")
+        dados={"senha": senha}
+        self._repo_operador.actualizar(operador_id, dados)
+        logger.info("sucesso: senha operdor id %d actualizada", operador_id)
+        auditoria.auditar(
+            operador_id,
+            operacao="mudar_senha",
+            detalhes="actualizou sua senha"
+        )
         
         
     def promover_operador(self, operador_id, id_alvo):
