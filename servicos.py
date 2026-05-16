@@ -252,7 +252,7 @@ class ServicoOperador(PermissaoMixIn):
                 auditoria.auditar(
                     operador_id,
                     operacao="pesquisar_clientes",
-                    detalhes=f"pesquisou pelo cliente com  nome parecido a :{termo}")
+                    detalhes=f"pesquisou pelo operador com  nome parecido a :{termo}")
                 logger.debug("buscando operadores por nome similar")    
                 return self._repo_operador.buscar_nome(termo)
             elif not termo:
@@ -306,7 +306,7 @@ class ServicoOperador(PermissaoMixIn):
 
     def actualizar_operador(self, operador_id:int, id_alvo:int,  dados: dict) -> list:
         """
-        Actualisa os dados de um operador e regstra um log de auditoria.
+        Actualisa os dados de um operador e regstra um log de auditoria com restricao apenas ADM pode atualizar dados
         Impede a actulizacao dos campos (ADM, id, Identificacao), os novos dados nao podem ser iguais aos antigos.
         
         Args:
@@ -323,13 +323,15 @@ class ServicoOperador(PermissaoMixIn):
             EntityNotFoundError: se o operador  alvo nao for encontrado.
             
         """
+        campos_restritos=["ADM", "id", "identificacao", "senha"]
         
-        if not self.permissao(self._repo_operador, operador_id, "actualizar_operador"):
-            if "ADM" in dados.keys():
-                raise PermissionDeniedError("so ADM pode promover operadore.")
+        #verifica se operador esta actualizando para si mesmo
+        if not self.permissao(self._repo_operador, operador_id, "actualizar_operador") and operador_id != id_alvo:
+                raise PermissionDeniedError("so ADM pode atualizar dados de outros operadores.")
                 
-        if "identificacao" in dados.keys() or "id" in dados.keys() :
-            raise KeyError("campo nao sujeito a alteracao.")
+        for campo in dados.keys():
+            if campo in  campos_restritos:
+                raise KeyError(f"campo {campo} nao sujeito a atualizacao.")
          
          #Verifica se os dados de actualizacao sao  novos.
         logger.debug("verificando  campos %s" , dados.keys())
@@ -348,7 +350,9 @@ class ServicoOperador(PermissaoMixIn):
         )
         return campos
 
-
+    
+        
+        
     def promover_operador(self, operador_id, id_alvo):
         """
         Promove um operador para ADM, alterdo o  valor do campo ADM pata True.
@@ -396,11 +400,4 @@ class ServicoOperador(PermissaoMixIn):
             detalhes=f"rebaixu o operador id:{id_alvo}."
         )
         logger.info("sucesso: operador id %d rebaixado ", id_alvo)
-        
-                
-URL_CONEXAO="sqlite:///xirico.db"
-CONECTOR= Conector(URL_CONEXAO)
-InfraBanco(CONECTOR)
-a= RepositorioOperadores(CONECTOR)
-ser=ServicoOperador(a)
-ser.pesquisar_operadores(1,4)
+       
