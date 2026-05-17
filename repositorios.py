@@ -9,7 +9,7 @@ logging.basicConfig(
    datefmt= '%H:%M',
    level=logging.DEBUG)
    
-                   
+               
 class Operacoes(abc.ABC):
     def __init__(self,conector:Conector):
         self.engine=conector.engine
@@ -91,6 +91,7 @@ class RepositorioClientes(Operacoes):
         Raises:
             DuplicteError: se o cliente ja existir
         '''
+      
         inserir= self.tabela.insert()
         
         with self.engine.begin() as conexao:
@@ -165,7 +166,7 @@ class RepositorioClientes(Operacoes):
             res=conexao.execute(busca).first()
             if not res:
                 logger1.warning("a busca por id nao encontrou um cliente com id:%d", id)
-                raise EntityNotFound("nenhum cliente com o id fornecido")
+                raise EntityNotFoundError("nenhum cliente com o id fornecido")
             logger1.info("busca do cliente id:%d realizada com exito", id)
             return res._asdict()
             
@@ -282,6 +283,9 @@ class RepositorioOperadores(Operacoes):
             
         Retunrs:
             int: numero de operadores deletados
+        
+        Raises:
+            EntityNotFoundError: se o operador nao for encontrado.
         '''
         deletar= self.tabela.update().where(sa.and_(self.tabela.c.id==id, self.tabela.c.ativo==True)).values(ativo=False)
         
@@ -309,7 +313,7 @@ class RepositorioOperadores(Operacoes):
             EntityNotFoundError: se nenhum operador for encontrado com o id fornecido
             
         """
-        actualizar= self.tabela.update().where(sa.end_(self.tabela.c.id==id, self.tabela.c.ativo==True)) 
+        actualizar= self.tabela.update().where(sa.and_(self.tabela.c.id==id, self.tabela.c.ativo==True)) 
         actualizar=actualizar.values(dados)
     
         with self.engine.begin() as conexao:
@@ -343,7 +347,7 @@ class RepositorioOperadores(Operacoes):
             res=conexao.execute(busca).first()
             if not res:
                 logger1.warning("a busca por id nao encontrou nenhum operador com id:%d", id)
-                raise EntityNotFound("nenhum operador com o id fornecido")
+                raise EntityNotFoundError("nenhum operador com o id fornecido")
             logger1.info("busca do operador id:%d realizada com exito", id)
             return res._asdict()
         
@@ -360,7 +364,7 @@ class RepositorioOperadores(Operacoes):
         """
         dados=list()
         busca= sa.select(self.tabela)
-        busca=busca.where(self.tabela.c.ativo=True)
+        busca=busca.where(self.tabela.c.ativo==True)
         with self.engine.begin() as conexao:
             res=conexao.execute(busca)
             for resultado in res.fetchall():
@@ -368,7 +372,7 @@ class RepositorioOperadores(Operacoes):
             if not dados:
                 logger1.warning("tentativa de buscar dados numa tabela (operadores) vazia")
                 raise EmptyTableError("sua tabela operadores esta vazia")
-            logger1.info("Abusca por operdores retornou %d resultados", len(dados))     
+            logger1.info("A busca por operdores retornou %d resultados", len(dados))     
             return dados
                 
         
@@ -430,8 +434,33 @@ class RepositorioOperadores(Operacoes):
                 raise EntityNotFoundError("operador com o email fornrcido nao encontrado")
             logger1.info("operador localizado pelo email fornecido")    
             return resultado._asdict()
+
+    def buscar_inativo(self, email):
+            """
+            Busca um operador desativado no banco usando seu email.
             
+            Args:
+                email(str): email do operador inativo.
+                
+             Returns:
+                 bool:True se a buscar encontrar operador.
             
+            Raises:
+                EntityNotFoundError: se a buscs nao encontra o operador.   
+            """
+            
+            busca= sa.select(self.tabela).where(sa.and_(self.tabela.c.ativo==False, self.tabela.c.email== email))      
+            
+            with self.engine.begin() as conexao:
+                logger1.debug("buscando operador inativo ")
+                res=conexao.execute(busca)
+                operador= res.first()
+                if not operador:
+                    raise EntityNotFoundError("operador inativo nao encontrado")
+                logger1.info("sucesso: busca de operador inativo concluida.")     
+                return operador
+                
+                
     @property
     def total_registros(self):
         """
@@ -628,4 +657,13 @@ class RepositorioAves(Operacoes):
             with self.engine.begin() as conexao:
                 total= conexao.execute(sa.func.count(self.tabela.c.id)).scalar()
                 return total
-        
+
+
+
+  
+dados2={'nome': 'umohau', 'identificacao': '8368979925', 'telefone': '852790882', 'email': 'muhauhara334@gmail.com', 'endereco': 'moamba, matadouro',
+'senha':'muhau333',
+'ADM':True, 'ativo':False}      
+
+
+#adiciona o metodo buscar_inativo
