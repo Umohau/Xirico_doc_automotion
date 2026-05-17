@@ -460,7 +460,26 @@ class RepositorioOperadores(Operacoes):
                 logger1.info("sucesso: busca de operador inativo concluida.")     
                 return operador
                 
-                
+    def pegar_senha(self, email):
+        """
+        Busca a senha do operador do email fornecido.
+        
+        Args:
+            email(str): email do operador da senha alvo.
+            
+        Returns:
+            bytes: hash com salt da senha.
+        """
+        pegar_senha=sa.select(self.tabela.c.senha).where(sa.and_(self.tabela.c.email==email, self.tabela.c.ativo==True))
+        
+        with self.engine.begin() as conexao:
+            logger1.debug("Buscando senha do operador.")
+            res=conexao.execute(pegar_senha)
+            senha= res.first()
+            logger1.info("sucesso: busca da senha finalizada")
+            return senha
+            
+                                    
     @property
     def total_registros(self):
         """
@@ -644,8 +663,8 @@ class RepositorioAves(Operacoes):
                 raise EntityNotFoundError(f"nenhuma ave corrsponde ao nome '{nome}")
             logger1.info("A busca por nome retornou %d resultado de aves para '%s'", len(dados), nome)
             return dados
-        
-        
+
+            
     @property
     def total_registros(self):
             """
@@ -661,9 +680,8 @@ class RepositorioAves(Operacoes):
 
 
   
-dados2={'nome': 'umohau', 'identificacao': '8368979925', 'telefone': '852790882', 'email': 'muhauhara334@gmail.com', 'endereco': 'moamba, matadouro',
+dados2={'nome': 'umohau', 'identificacao': '8368925', 'telefone': '8509082', 'email': 'muhauhara8374@gmail.com', 'endereco': 'moamba, matadouro',
 'senha':'muhau333',
-'ADM':True, 'ativo':False}      
+'ADM':True, 'ativo':True}      
 
 
-#adiciona o metodo buscar_inativo

@@ -351,6 +351,18 @@ class ServicoOperador(PermissaoMixIn):
         return campos
 
     def mudar_senha(self, operador_id, senha):
+        """Altera a senha actual do operador que executa o metodo, para a nova senha fornecida.
+        
+        Args:
+            operador_id(int): id do operador que executa o metodo.
+            senha(bytes): nova senha  hasheada e com salt.
+       
+        Returns:
+            bool: True se sucesso na actualizacao.
+        
+        Raises:
+            ValueError: se nova senha for igual a senha actual.
+        """
         senha_antiga= self._repo_operador.buscar_id(operador_id)["senha"]
         logger.debug("verificando se nova senha é igual a antiga")
         if senha_antiga==senha:
@@ -363,7 +375,7 @@ class ServicoOperador(PermissaoMixIn):
             operacao="mudar_senha",
             detalhes="actualizou sua senha"
         )
-        
+        return True
         
     def promover_operador(self, operador_id, id_alvo):
         """
@@ -413,3 +425,5 @@ class ServicoOperador(PermissaoMixIn):
         )
         logger.info("sucesso: operador id %d rebaixado ", id_alvo)
        
+#adiciona docstring ao metodo mudar_senha.
+#adiciona um return ao metedo mudar_senha.
