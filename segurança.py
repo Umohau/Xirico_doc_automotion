@@ -1,8 +1,14 @@
 import bcrypt
 import sys
 import json
+import jwt
+import logging
+import secrets
+import keyring
 from pathlib import Path
-from datetime import datetime
+from keyrings.alt.file import PlaintextKeyring
+from datetime import datetime, timezone, timedelta
+
 
 
 class SegSenha:
@@ -121,7 +127,7 @@ class Autenticacao:
             "iat":IAT,
             "exp":EXP}
         logger.debug("gerando token")
-        return jwt.encode(carga_util, CHAVE_SECRETA, algorithm="HS256")
+        return jwt.encode(carga_util, chave, algorithm="HS256")
 
 
     def descodificar_token(token:str, chave:bytes, ) -> dict:
