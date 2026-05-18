@@ -101,3 +101,26 @@ class Auditoria:
 #instancias globais das classes sem dependencia externa para facilitar acesso
 segsenha=SegSenha() # da classe SegSenha
 auditoria=Auditoria() # da classe Auditoria
+
+class Autenticacao:
+    def gerar_token(self, operador_id: int, adm: bool) -> str:
+        """
+        Gera um token de acesso para o usuario autenticado.
+        
+        Args:
+            operador_id(int): id do operador logado.
+            adm(bool): define a categoria do operador.
+            
+        Returns:
+            str: o token gerado
+        """
+        carga_util={
+            "id_operador": operador_id,
+            "ADM":adm,
+            "iat":IAT,
+            "exp":EXP}
+        logger.debug("gerando token")
+        return jwt.encode(carga_util, CHAVE_SECRETA, algorithm="HS256")
+
+
+    
