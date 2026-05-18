@@ -6,10 +6,11 @@ import logging
 import secrets
 import keyring
 from pathlib import Path
-from keyrings.alt.file import PlaintextKeyring
+from keyrings.alt.file import PlaintextKeyring #para testes em desenvolvimento
 from datetime import datetime, timezone, timedelta
 
 
+keyring.set_keyring(PlaintextKeyring()) # para testes durante desenvolvimento
 
 class SegSenha:
     @staticmethod
