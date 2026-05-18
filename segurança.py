@@ -103,12 +103,13 @@ segsenha=SegSenha() # da classe SegSenha
 auditoria=Auditoria() # da classe Auditoria
 
 class Autenticacao:
-    def gerar_token(self, operador_id: int, adm: bool) -> str:
+    def gerar_token(self, operador_id:int, chave:bytes, adm: bool) -> str:
         """
         Gera um token de acesso para o usuario autenticado.
         
         Args:
             operador_id(int): id do operador logado.
+            chave(bytes): chave secreta de 32bytes para assinar o token.
             adm(bool): define a categoria do operador.
             
         Returns:
