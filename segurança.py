@@ -143,3 +143,31 @@ class Autenticacao:
         except InvalidTokenError as e:
             logger.warning("token invalido")
             raise  
+            
+            
+    def guardar_token(nome_usuario:str, token: str ) -> None:
+        """
+        Armazena o token  de forma segura  no gerenciador de senhas do sistema operacional usando  bibliotec keyring.
+        
+        Args:
+            nome_usuario(str): nome do usuario do token.
+            token(str): token a ser armazenado.
+            
+        Returns:
+            None
+            
+        Raises:
+            InitError: se o chaveiro estiver indisponivel.
+            PasswordSetError: se nao for possivel armazenar o token no chaveiro.
+        """
+        try:
+            logger.debug("salvando token")
+            keyring.set_password("servico_xirico", nome_usuario, token)
+            logger.debug("sucesso: token salvo")
+            return None
+        except keyring.errors.InitError as e:
+            logger.warning("erro: falha ao guardar token chaveiro indisponivel-----Erro: %d", e.errno())
+            raise
+        except keyring.errors.PasswordSetError as e:
+            logger.warning("erro: falha ao guardar token-----Erro: %d", e.errno())
+            raise
