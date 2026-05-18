@@ -171,3 +171,29 @@ class Autenticacao:
         except keyring.errors.PasswordSetError as e:
             logger.warning("erro: falha ao guardar token-----Erro: %d", e.errno())
             raise
+            
+            
+    def pegar_token(nome_usuario:str) -> str:
+        """
+        Recupera o token armazenado no gestor de senhas do sistema.
+        
+        Args:
+            nome_usuario(str): nome do usuario do token a ser recuperado.
+            
+        Returns:
+            str:o token recuperado do gestor de senhas.
+            
+        Raises:
+            InitError: se o gestor de senhas estiver indisponivel.
+            PasswordGetError: se falhar ao acessar o token.
+            
+        """
+        try:
+            logger.debug("caregndo token")
+            return keyring.get_password("servico_xirico", nome_usuario)
+        except keyring.errors.InitError as e:
+            logger.warning("erro: falha ao pegar token. chaveiro indisponivel-----Erro: %d", e.errno())
+            raise
+        except keyring.errors.PasswordGetError as e:
+            logger.warning("erro: falha ao pegar token.falha no acesso-----Erro: %d", e.errno())
+            raise
