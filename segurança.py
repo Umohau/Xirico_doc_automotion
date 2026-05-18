@@ -123,4 +123,23 @@ class Autenticacao:
         return jwt.encode(carga_util, CHAVE_SECRETA, algorithm="HS256")
 
 
-    
+    def descodificar_token(token:str, chave:bytes, ) -> dict:
+        """
+        Descodifica o token  fornecido.
+        
+        Args:
+            token(str): token a descodificar.
+            chave(bytes): chave do token.
+            
+        Returns:
+            dict: dicionario com os dados do token.
+            
+        Raises:
+            InvalidTokenError: se o token for invalido(assinatura invalida, token expirado ou outro que invalide o token)
+        """
+        try:
+            logger.debug("descodificando token")
+            return jwt.decode(token, chave, algorithms=["HS256"])
+        except InvalidTokenError as e:
+            logger.warning("token invalido")
+            raise  
