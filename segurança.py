@@ -9,7 +9,15 @@ from pathlib import Path
 from keyrings.alt.file import PlaintextKeyring #para testes em desenvolvimento
 from datetime import datetime, timezone, timedelta
 
+SERVICO="programa__xirico"
+KEY="chave_jwt"
 
+logger= logging.getLogger(__name__)
+logging.basicConfig(
+    format= "%(levelname)s: %(name)s: %(message)s: %(asctime)s",
+    datefmt="%H:%M",
+    level= logging.DEBUG
+    )
 keyring.set_keyring(PlaintextKeyring()) # para testes durante desenvolvimento
 
 class SegSenha:
@@ -109,8 +117,23 @@ class Auditoria:
 segsenha=SegSenha() # da classe SegSenha
 auditoria=Auditoria() # da classe Auditoria
 
+
 class Autenticacao:
-    def gerar_token(self, operador_id:int, chave:bytes, adm: bool) -> str:
+    def __init__(self):
+        self.chave_jwt=self.pegar_chave_jwt().encode("utf-8")
+    
+    def pegar_chave_jwt(self):
+        logger.debug("pegando chave_jwt")
+        chave= keyring.get_password(SERVICO, KEY)
+        if not chave:
+            logger.debug("chave nao encontrada")
+            logger.debug("gerando nova chave unica")
+            chave= secrets.token_urlsafe(32)
+            keyring.set_password(SERVICO, KEY, chave)
+            logger.debug("sucesso: chave gerada e armazenada.")
+        return chave
+        
+    def gerar_token(self, operador_id:int, adm: bool) -> str:
         """
         Gera um token de acesso para o usuario autenticado.
         
@@ -128,16 +151,17 @@ class Autenticacao:
             "iat":IAT,
             "exp":EXP}
         logger.debug("gerando token")
-        return jwt.encode(carga_util, chave, algorithm="HS256")
+        token_gerado= jwt.encode(carga_util, self.chave_jwt, algorithm="HS256")
+        logger.debug("sucesso: token gerado")
+        return token_gerado
 
 
-    def descodificar_token(token:str, chave:bytes, ) -> dict:
+    def descodificar_token(token:str) -> dict:
         """
         Descodifica o token  fornecido.
         
         Args:
             token(str): token a descodificar.
-            chave(bytes): chave do token.
             
         Returns:
             dict: dicionario com os dados do token.
@@ -147,8 +171,8 @@ class Autenticacao:
         """
         try:
             logger.debug("descodificando token")
-            return jwt.decode(token, chave, algorithms=["HS256"])
-        except InvalidTokenError as e:
+            return jwt.decode(token, self._chave_jwt, algorithms=["HS256"])
+        except jwt.exceptions.InvalidTokenError as e:
             logger.warning("token invalido")
             raise  
             
@@ -205,3 +229,4 @@ class Autenticacao:
         except keyring.errors.PasswordGetError as e:
             logger.warning("erro: falha ao pegar token.falha no acesso-----Erro: %d", e.errno())
             raise
+            
