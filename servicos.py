@@ -1,5 +1,6 @@
 import logging
-from segurança import auditoria
+from segurança import auditoria, segsenha
+from segurança import Autenticacao as auth# nova importacao
 from repositorios import RepositorioClientes, RepositorioAves, RepositorioOperadores
 from infra import DuplicateError,PermissionDeniedError, EntityNotFoundError, InfraBanco, Conector
 
@@ -9,40 +10,24 @@ logging.basicConfig(format= '%(levelname)s: %(message)s  %(asctime)s',
    level=logging.DEBUG)
    
 class PermissaoMixIn:
-    
-    def permissao(self,repo_operador:RepositorioOperadores, id_operador: int, operacao:str):
+    @staticmethod 
+    def permissao(token:str):
         """
-        verifica se o operador existe e se existir verifica se é ADM
+        Verifica se o operdor logado é Administrador ou nao.
         
         Args:
-            repo_operador(object): instancia de RepositorioOperadores.
-            id_operador: id do operador a ser verificado.
-            operacao(str): nome da operacao que o operador pretende realizar.
+            token(str): um token jwt do usuario logado.
             
         Returns:
-            bool: True se existir e for ADM. False se existir mas nao for ADM
-            
+            True: se o operador for ADM
+            False: se nao for ADM
+        
         Raises:
-            EntityNotFoundError: se o operador nao existir
+            InvalidTokenError: se o token for invalido 
         """
-        
-        #verifica se operdor existe
-        try:
-            operador= repo_operador. buscar_id(id_operador)
-        except EntityNotFoundError:
-            logger.warning("operador inexistente tentou %s", operacao)
-            raise
-        
-        # verifica se operdor é ADM
-        if not operador.get("ADM"):
-                logger.warning("PERMISSAO NEGADA: tentativa de %s pelo operador id:%d.", operacao, id_operador)
-                return False
-        return True
-            
-            
-        
-        
-        
+        dados=auth.descodificar_token(token)
+        return dados["ADM"]
+                    
         
 class ServicoCliente(PermissaoMixIn):
     def __init__(self, repo_cliente:RepositorioClientes, repo_operador:RepositorioOperadores):
@@ -67,7 +52,7 @@ class ServicoCliente(PermissaoMixIn):
             EntityNotFoundError: se o operador que chamou o metodo nao existir.
         """
         
-        if self.permissao(self._repo_operador, operador_id, "adicionar_cliente"):
+        if self.permissao(t):
             try:
                novo_id=self._repo_cliente.inserir(dados)
                auditoria.auditar(operador_id,"adiconar_cliente", f" adicionou um novo cliente com id:{novo_id}")
@@ -365,7 +350,8 @@ class ServicoOperador(PermissaoMixIn):
         """
         senha_antiga= self._repo_operador.buscar_id(operador_id)["senha"]
         logger.debug("verificando se nova senha é igual a antiga")
-        if senha_antiga==senha:
+        
+        if segsenha.verificar(senha, senha_antiga):
             raise ValueError("a nova senha deve ser diferente da anterior")
         dados={"senha": senha}
         self._repo_operador.actualizar(operador_id, dados)
@@ -425,5 +411,4 @@ class ServicoOperador(PermissaoMixIn):
         )
         logger.info("sucesso: operador id %d rebaixado ", id_alvo)
        
-#adiciona docstring ao metodo mudar_senha.
-#adiciona um return ao metedo mudar_senha.
+        
