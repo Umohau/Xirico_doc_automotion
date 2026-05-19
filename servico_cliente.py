@@ -1,7 +1,6 @@
 import logging
-from segurança import auditoria, segsenha, gestor_sessao
-from segurança import Autenticacao as auth
-from repositorios import RepositorioClientes, RepositorioAves, RepositorioOperadores
+from segurança import auditoria,gestor_sessao
+from repositorios import RepositorioClientes
 from infra import DuplicateError,PermissionDeniedError, EntityNotFoundError, InfraBanco, Conector
 
 logger= logging.getLogger(__name__)
@@ -26,8 +25,8 @@ class PermissaoMixIn:
         """
         return operador.get("ADM", False)
         
-                    
-        
+
+
 class ServicoCliente(PermissaoMixIn):
     def __init__(self, repo_cliente:RepositorioClientes, gestor_sessao):
         self._repo_cliente=repo_cliente
