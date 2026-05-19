@@ -176,11 +176,3 @@ class ServicoCliente(PermissaoMixIn):
 
 
         
-dados={'nome': 'umohau'}
-
-URL_CONEXAO="sqlite:///xirico.db"
-CONECTOR= Conector(URL_CONEXAO)
-InfraBanco(CONECTOR)
-a= RepositorioClientes(CONECTOR)
-ser=ServicoCliente(a, gestor_sessao)
-ser.actualizar_cliente(6, dados)
