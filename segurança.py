@@ -11,6 +11,9 @@ from datetime import datetime, timezone, timedelta
 
 SERVICO="programa__xirico"
 KEY="chave_jwt"
+AGORA=datetime.now(timezone.utc)
+IAT= int(AGORA.timestamp())
+EXP=int((AGORA+ timedelta(hours=1)).timestamp())
 
 logger= logging.getLogger(__name__)
 logging.basicConfig(
@@ -113,11 +116,6 @@ class Auditoria:
         return historico
 
 
-#instancias globais das classes sem dependencia externa para facilitar acesso
-segsenha=SegSenha() # da classe SegSenha
-auditoria=Auditoria() # da classe Auditoria
-
-
 class Autenticacao:
     def __init__(self):
         self.chave_jwt=self.pegar_chave_jwt().encode("utf-8")
@@ -156,7 +154,7 @@ class Autenticacao:
         return token_gerado
 
 
-    def descodificar_token(token:str) -> dict:
+    def descodificar_token(self,token:str) -> dict:
         """
         Descodifica o token  fornecido.
         
@@ -171,7 +169,7 @@ class Autenticacao:
         """
         try:
             logger.debug("descodificando token")
-            return jwt.decode(token, self._chave_jwt, algorithms=["HS256"])
+            return jwt.decode(token, self.chave_jwt, algorithms=["HS256"])
         except jwt.exceptions.InvalidTokenError as e:
             logger.warning("token invalido")
             raise  
@@ -230,3 +228,34 @@ class Autenticacao:
             logger.warning("erro: falha ao pegar token.falha no acesso-----Erro: %d", e.errno())
             raise
             
+
+class GestorDeSessao:
+    def __init__(self):
+        self.autent= Autenticacao() #instancia de Autenticacao
+        self._token=None
+        self._operador=None
+        
+        
+    def iniciar_sessao(self, token:str) -> None:
+        self._token=token
+        self._operador=self.autent.descodificar_token(token)
+        
+    @property
+    def token(self):
+        return self._token
+        
+              
+    @property
+    def operador(self):
+        return self._operador
+        
+    def terminar_sessao(self):
+        self.token=None
+        self.operador=None
+ 
+
+#instancias globais das classes sem dependencia externa para facilitar acesso
+segsenha=SegSenha() # da classe SegSenha
+auditoria=Auditoria() # da classe Auditoria
+gestor_sessao=GestorDeSessao()
+
