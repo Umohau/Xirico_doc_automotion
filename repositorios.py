@@ -479,7 +479,34 @@ class RepositorioOperadores(Operacoes):
             logger1.info("sucesso: busca da senha finalizada")
             return senha
             
-                                    
+    def verificar_unicidade(self, dados:dict) -> bool:
+        """
+        Verifica se o valor da chave do par/chave do argumento dados existe na tabela de operadores.
+        
+        Args:
+            dados(dict): um unico par chave/valor.É o dado que se pretende verificar.
+        
+        Returns:
+            True: se o dado for unico(ainda nao existe na tabela operadores).
+            
+        Raises:
+            DuplicateError: se o dado existir
+        """
+        campo= next(iter(dados))
+        coluna=getattr(self.tabela.c, campo )
+        valor= next(iter(dados.values()))
+        busca= sa.select(self.tabela).where(coluna== valor)
+        #realiza a busca no banco
+        logger1.debug("verificando unicidade de %s", campo)
+        with self.engine.begin() as conexao:
+            res=conexao.execute(busca).first()
+            if not res:
+                logger1.debug("sucesso: %s unico", campo)
+                return True
+            logger1.debug("concluida: %s nao é unico", campo)
+            raise DuplicateError(f"ja existe o um operador com o {campo} fornecido")
+            
+            
     @property
     def total_registros(self):
         """
@@ -680,8 +707,3 @@ class RepositorioAves(Operacoes):
 
 
   
-dados2={'nome': 'umohau', 'identificacao': '8368925', 'telefone': '8509082', 'email': 'muhauhara8374@gmail.com', 'endereco': 'moamba, matadouro',
-'senha':'muhau333',
-'ADM':True, 'ativo':True}      
-
-
