@@ -23,6 +23,24 @@ logging.basicConfig(
     )
 keyring.set_keyring(PlaintextKeyring()) # para testes durante desenvolvimento
 
+
+class PermissaoMixIn:
+    @staticmethod 
+    def permissao(operador):
+        """
+        Verifica se o operdor logado é Administrador ou nao.
+        Params:
+            operador: operador a ser verificado 
+            
+        Returns:
+            True: se o operador for ADM
+            False: se nao for ADM
+        
+        Raises:
+            InvalidTokenError: se o token for invalido 
+        """
+        return operador.get("ADM", False)
+        
 class SegSenha:
     @staticmethod
     def hashear(senha: str) -> bytes:
