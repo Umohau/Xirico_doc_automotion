@@ -1,5 +1,5 @@
 import logging
-from segurança import auditoria,gestor_sessao
+from segurança import auditoria,gestor_sessao, PermissaoMixIn
 from repositorios import RepositorioClientes
 from infra import DuplicateError,PermissionDeniedError, EntityNotFoundError, InfraBanco, Conector
 
@@ -8,24 +8,6 @@ logging.basicConfig(format= '%(levelname)s: %(message)s  %(asctime)s',
    datefmt= '%H:%M',
    level=logging.DEBUG)
    
-class PermissaoMixIn:
-    @staticmethod 
-    def permissao(operador):
-        """
-        Verifica se o operdor logado é Administrador ou nao.
-        Params:
-            operador: operador a ser verificado 
-            
-        Returns:
-            True: se o operador for ADM
-            False: se nao for ADM
-        
-        Raises:
-            InvalidTokenError: se o token for invalido 
-        """
-        return operador.get("ADM", False)
-        
-
 
 class ServicoCliente(PermissaoMixIn):
     def __init__(self, repo_cliente:RepositorioClientes, gestor_sessao):
