@@ -39,7 +39,13 @@ class PermissaoMixIn:
         Raises:
             InvalidTokenError: se o token for invalido 
         """
-        return operador.get("ADM", False)
+        logger.debug("checando permissao")
+        perm= operador.get("ADM", False)
+        if perm:
+            logger.debug("pernissao Válida")
+            return perm
+        logger.warning("permissao negada")
+        return perm
         
 class SegSenha:
     @staticmethod
@@ -276,4 +282,7 @@ class GestorDeSessao:
 segsenha=SegSenha() # da classe SegSenha
 auditoria=Auditoria() # da classe Auditoria
 gestor_sessao=GestorDeSessao()
+token=Autenticacao().gerar_token(2, False)
+gestor_sessao.iniciar_sessao(token)
+#print(auditoria.historico_hoje(2))
 
