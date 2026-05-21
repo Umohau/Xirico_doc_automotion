@@ -287,10 +287,11 @@ class RepositorioOperadores(Operacoes):
         Raises:
             EntityNotFoundError: se o operador nao for encontrado.
         '''
-        deletar= self.tabela.update().where(sa.and_(self.tabela.c.id==id, self.tabela.c.ativo==True)).values(ativo=False)
+        desativar= self.tabela.update().where(sa.and_(self.tabela.c.id==id, self.tabela.c.ativo==True)).values(ativo=False)
         
         with self.engine.begin() as conexao:
-            resultado=conexao.execute(deletar).rowcount
+            logger1.debug("desativando operador")
+            resultado=conexao.execute(desativar).rowcount
             if resultado:
                 logger1.info('operador com id %d desativado com sucesso', id)
                 return resultado
@@ -492,19 +493,21 @@ class RepositorioOperadores(Operacoes):
         Raises:
             DuplicateError: se o dado existir
         """
+        ignorados=["nome", "senha", "endereco", "ativo", "ADM"] #campos nao sujeitos a verificacao de unicidadde
         campo= next(iter(dados))
         coluna=getattr(self.tabela.c, campo )
         valor= next(iter(dados.values()))
-        busca= sa.select(self.tabela).where(coluna== valor)
-        #realiza a busca no banco
-        logger1.debug("verificando unicidade de %s", campo)
-        with self.engine.begin() as conexao:
-            res=conexao.execute(busca).first()
-            if not res:
-                logger1.debug("sucesso: %s unico", campo)
-                return True
-            logger1.debug("concluida: %s nao é unico", campo)
-            raise DuplicateError(f"ja existe o um operador com o {campo} fornecido")
+        if campo not in ignorados:
+            busca= sa.select(self.tabela).where(coluna== valor)
+            #realiza a busca no banco
+            logger1.debug("verificando unicidade de %s", campo)
+            with self.engine.begin() as conexao:
+                res=conexao.execute(busca).first()
+                if not res:
+                    logger1.debug("sucesso: %s unico", campo)
+                    return True
+                logger1.debug("concluida: %s nao é unico", campo)
+                raise DuplicateError(f"ja existe o um operador com o {campo} fornecido")
             
             
     @property
