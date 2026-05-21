@@ -3,13 +3,23 @@ from segurança import auditoria,gestor_sessao, PermissaoMixIn
 from repositorios import RepositorioOperadores #para testes locais
 from infra import DuplicateError,PermissionDeniedError, EntityNotFoundError, InfraBanco, Conector
 
-logger1= logging.getLogger(__name__)
+logger= logging.getLogger(__name__)
 logging.basicConfig(
    format= '%(levelname)s: %(message)s: %(asctime)s',
    datefmt= '%H:%M',
    level=logging.DEBUG) 
    
-class ServicoOperador(PermissaoMixIn):
+   
+class FiltroMixIn:
+    def filtrar_dados(self,dados, filtros):
+        dados_filtrados=dict()
+        logger.debug("filtrando dados")
+        for campo, valor in dados.items():
+            if campo not in filtros:
+                dados_filtrados[campo]= valor
+        return dados_filtrados
+           
+class ServicoOperador(PermissaoMixIn, FiltroMixIn):
     def __init__(self, repo_operador:RepositorioOperadores):
         self._repo_operador=repo_operador
         
@@ -56,55 +66,103 @@ class ServicoOperador(PermissaoMixIn):
             return novo_id
         raise PermissionDeniedError("somente ADM pode adicionar novos operadores")
             
-        
-    def pesquisar_operadores(self,operador_id: int, termo: int|str=None) -> dict|list[dict]:
+    def pesquisar_nome(self, nome):
         """
-        pesquisa por operadores no repositorio operadores e registra logs de auditoria.
+        Busca operadores que tenham um nome similar ao fornecido.
+        Filtra os resultados de duas formas: 
+            se quem executa for ADM retorna todos campos exceto : senha.
+            se quem executa nao for ADM retorna: email, nome, ativo, ADM.
+         Faz o registro de auditoria
+        
         
         Args:
-            operador_id(int): id do operador.
-            termo(int| str| None): termo a ser pesquisado pode ser um id ou nome parcial:
-                -se for "int" a pesquisa busca por id.
-                -se for "str" a pesquisa busca por nome (parcial).
-                -se for "None" a pesquisa busca todos os clientes.
-
-        Returns:
-            dict: se a busca for por id -retorna dicionario com os dados do operador.
-            list[dict]: se a pesquisa buscar tudo,ou nome parcial - lista de dicionarios com os dados do operador.
-        
-        Raises:
-            EntityNotFoundError: se a busca por nome ou id nao nao encontrar operadores que correspondam.
-            EmptyTableError: se a busca por todos nao encontrar operadores.
-            TypeError: se o tipo do termo nao for str, int ou None.
-        """
-        if self.permissao(self._repo_operador, operador_id, "pesquisar operadores"):
-            if isinstance(termo, int):
-                auditoria.auditar(
-                    operador_id,
-                    operacao="pesquisar_operadores",
-                    detalhes=f"pesquisou por :{termo}, em operadores.")
-                logger.debug("buscando por id")     
-                return self._repo_operador.buscar_id(termo)
+            nome(str): nome completo ou parcial do operador.
             
-            elif isinstance(termo, str):
-                auditoria.auditar(
-                    operador_id,
-                    operacao="pesquisar_clientes",
-                    detalhes=f"pesquisou pelo operador com  nome parecido a :{termo}")
-                logger.debug("buscando operadores por nome similar")    
-                return self._repo_operador.buscar_nome(termo)
-            elif not termo:
-                auditoria.auditar(
-                    operador_id,
-                    operacao="pesquisar_operadores",
-                    detalhes=f"pesquisou por todos os operadores")
-                logger.debug("buscando todos operadoreas")
-                return self._repo_operador.buscar_tudo()
-                
-            else:
-                raise TypeError("valor do argumento 'termo' invalido")
-        raise PermissionDeniedError("apenas ADM pode pesquisar operadores")
+        Returns:
+            list[dict]: lista de dicionarios que contem dados dos operadores.
+            
+        Raises:
+            EntityNotFoundError: se nao operdores que corespondam ao nome.
+        """
+        operador_id=self.operador.get("id_operador")
+        filtro=[]
+        dados_prontos=[]
+        #busca operadores
+        logger.debug("buscando operadores com nome similar a %s", nome)  
+        dados= self._repo_operador.buscar_nome(nome)
         
+        #verifica se é ADM e define filtros
+        logger.debug("definindo filtros")
+        if self.permissao(self.operador):
+            filtro=["senha"]
+            logger.debug("definido: filtro ADM")
+        else:
+            filtro=["identificacao", "senha", "telefone", "endereco"]
+            logger.debug("definido: filtro comum ")   
+            
+       #registra auditoria     
+        auditoria.auditar(
+                    operador_id,
+                    operacao="pesquisar_nome",
+                    detalhes=f"pesquisou pelo operador com  nome parecido a :{nome}")
+        
+        for operador in dados:
+            dados_prontos.append(self.filtrar_dados(operador, filtro))
+        return dados_prontos
+        
+        
+    def pesquisar_id(self, id:int) -> dict:
+        """
+        Busca operador do id fornecido.
+        Filtra o resultado e omite a senha .
+         Faz o registro de auditoria
+        
+        
+        Args:
+            id(int): id do operador.
+            
+        Returns:
+            dict:  dicionario com os dados do operador
+            
+        Raises:
+            EntityNotFoundError: se nao encontrar o operdor do id fornecido.
+            PermissionDeniedError: se o quem executa nao for ADM
+        """
+        operador_id=self.operador.get("id_operador") # para registro de log
+        filtro=["senha"]
+        
+        # verifica permissao e busca operador
+        if not self.permissao(self.operador):
+            raise PermissionDeniedError("operacao restrita. busca exclusiva a ADMs.")
+        logger.debug("buscando operador com  id: %d", id)  
+        dados= self._repo_operador.buscar_id(id)
+        
+        #registra auditoria     
+        auditoria.auditar(
+                    operador_id,
+                    operacao="pesquisar_id",
+                    detalhes=f"pesquisou pelo operador com id:{id}")
+                    
+        return self.filtrar_dados(dados, filtro)
+        
+       
+    def pesquisar_operadores(self):
+        """
+        busca todos os operadores e filtra os dados.
+        """
+        operador_id= self.operador.get("id_operador")
+        filtro=["identificacao", "senha", "telefone", "endereco"]
+        dados_prontos=[]
+        dados=self._repo_operador.buscar_tudo()
+        #registra auditoria     
+        auditoria.auditar(
+            operador_id,
+            operacao="pesquisar_operadores",
+            detalhes=f"realizou uma pesquisa global")
+        
+        for operador in dados:
+            dados_prontos.append(self.filtrar_dados(operador, filtro))
+        return dados_prontos
         
     def desativar_operador(self, id_alvo: int) -> None:
       """
@@ -139,7 +197,4 @@ class ServicoOperador(PermissaoMixIn):
              raise
           
       raise PermissionDeniedError("somente ADM pode desativar operadores")       
-
-
-    
 
