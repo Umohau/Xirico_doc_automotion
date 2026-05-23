@@ -163,6 +163,20 @@ class OTP:
             elif time.time() < self._otp.get("exp"):
                 return "pending"
         raise RuntimeError("deve primeiro gerar um otp")
+        
+
+     def verificar_otp(self, codigo):
+        if self.status_ == "expired":
+             raise ExpiredOtpError("codigo de validacao expirdo")
+        if self._otp.get("otp")== codigo:
+             self.__tentativas=0
+             return True
+        else:
+            self.__tentativas+=1
+            if self.__tentativas >3:
+                self._otp=None
+                raise AttemptsExcedError("limite de tentativas excedidas")
+            return False               
                 
 class Autenticacao:
     def __init__(self):
