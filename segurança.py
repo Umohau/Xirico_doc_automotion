@@ -5,6 +5,9 @@ import jwt
 import logging
 import secrets
 import keyring
+import yagmail
+import time
+from random import randint
 from pathlib import Path
 from keyrings.alt.file import PlaintextKeyring #para testes em desenvolvimento
 from datetime import datetime, timezone, timedelta
@@ -140,6 +143,18 @@ class Auditoria:
         return historico
 
 
+class OTP:
+    def __init__(self):
+        self._otp= None
+        self.__tentativas=0
+             
+    def gerar_otp(self):
+        self.__tentativas=0
+        codigo=randint(1000000, 9999999)
+        exp=time.time() +300
+        self._otp={"otp":codigo, "exp":exp}
+        
+
 class Autenticacao:
     def __init__(self):
         self.chave_jwt=self.pegar_chave_jwt().encode("utf-8")
@@ -251,7 +266,9 @@ class Autenticacao:
         except keyring.errors.PasswordGetError as e:
             logger.warning("erro: falha ao pegar token.falha no acesso-----Erro: %d", e.errno())
             raise
-            
+
+    def aut_dois_fact(self):
+        
 
 class GestorDeSessao:
     def __init__(self):
