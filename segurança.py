@@ -165,7 +165,7 @@ class OTP:
         raise RuntimeError("deve primeiro gerar um otp")
         
 
-     def verificar_otp(self, codigo):
+    def verificar_otp(self, codigo):
         if self.status_ == "expired":
              raise ExpiredOtpError("codigo de validacao expirdo")
         if self._otp.get("otp")== codigo:
@@ -176,7 +176,15 @@ class OTP:
             if self.__tentativas >3:
                 self._otp=None
                 raise AttemptsExcedError("limite de tentativas excedidas")
-            return False               
+            return False
+            
+    def enviar_codigo(self, destino):
+        print(f"{self._otp.get('otp')}")
+        titulo="Codigo de verificacao"
+        corpo=f"{self._otp.get('otp')} é o seu codigo da xirico\n A xirico recomenda nao compartilhar este codigo com terceiros."
+        yag=yagmail.SMTP(CONTA_FA, SENHA_FA)
+        yag.send(destino, titulo, corpo)
+                                                  
                 
 class Autenticacao:
     def __init__(self):
@@ -290,8 +298,7 @@ class Autenticacao:
             logger.warning("erro: falha ao pegar token.falha no acesso-----Erro: %d", e.errno())
             raise
 
-    def aut_dois_fact(self):
-        
+    
 
 class GestorDeSessao:
     def __init__(self):
