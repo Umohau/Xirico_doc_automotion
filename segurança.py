@@ -154,7 +154,16 @@ class OTP:
         exp=time.time() +300
         self._otp={"otp":codigo, "exp":exp}
         
-
+    @property
+    def status_(self):
+        if self._otp != None:
+            if time.time() > self._otp.get("exp"):
+                return "expired"
+            
+            elif time.time() < self._otp.get("exp"):
+                return "pending"
+        raise RuntimeError("deve primeiro gerar um otp")
+                
 class Autenticacao:
     def __init__(self):
         self.chave_jwt=self.pegar_chave_jwt().encode("utf-8")
