@@ -165,7 +165,7 @@ class OTP:
         raise RuntimeError("deve primeiro gerar um otp")
         
 
-    def verificar_otp(self, codigo):
+    def verificar_otp(self, codigo: int) -> bool:
         if self.status_ == "expired":
              raise ExpiredOtpError("codigo de validacao expirdo")
         if self._otp.get("otp")== codigo:
@@ -178,7 +178,7 @@ class OTP:
                 raise AttemptsExcedError("limite de tentativas excedidas")
             return False
             
-    def enviar_codigo(self, destino):
+    def enviar_codigo(self, destino:str) -> None:
         print(f"{self._otp.get('otp')}")
         titulo="Codigo de verificacao"
         corpo=f"{self._otp.get('otp')} é o seu codigo da xirico\n A xirico recomenda nao compartilhar este codigo com terceiros."
