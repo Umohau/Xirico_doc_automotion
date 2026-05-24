@@ -1,5 +1,5 @@
 import logging
-from segurança import auditoria,gestor_sessao, PermissaoMixIn
+from segurança import auditoria,gestor_sessao, PermissaoMixIn, otp
 from repositorios import RepositorioOperadores #para testes locais
 from infra import DuplicateError,PermissionDeniedError, EntityNotFoundError, InfraBanco, Conector
 
@@ -28,43 +28,48 @@ class ServicoOperador(PermissaoMixIn, FiltroMixIn):
     def operador(self):
         return gestor_sessao.operador
         
-    def adicionar_operador(self, dados):
-        """
-        Adiciona um novo operador ao repositorio e registra auditoria.Apenas ADM pode adicionar operdores.
-        
-        Args:
-            dados(dict): dicionario de dados do novo operador.
+    def adicionar_operador(self, dados, cod):
+            """
+            Adiciona um novo operador ao repositorio e registra auditoria.Apenas ADM pode adicionar operdores. 
             
-        Returns:
-            int: id do operador adicionado
-            
-        Raises:
-            PermissionDeniedError: se operador que chama o metodo nao for ADM
-            DuplicateError: se existir operador com os dados fornecidos.
-        """
-        
-       
-        operador_id= self.operador["id_operador"]
-        
-        # verifica se o operador é ADM
-        if self.permissao(self.operador):
-            
-            #verifica campos unicos
-            for chave, dado in dados.items():
-                valor={chave:dado}
-                self._repo_operador.verificar_unicidade(valor)
+            Args:
+                dados(dict): dicionario de dados do novo operador.
+                cod(int): codigo otp enviado ao email do novo operador para confirmar identidade.
                 
-            # insere os dados do novo operador no repositorio    
-            novo_id=self._repo_operador.inserir(dados) 
-            
-           #registra o log de audiroria
-            auditoria.auditar(
-               operador_id,
-               operacao= "adicionar_operador",
-               detalhes= f"adicionou o operador id: {novo_id}")
-            
-            return novo_id
-        raise PermissionDeniedError("somente ADM pode adicionar novos operadores")
+            Returns:
+                int: id do operador adicionado
+                
+            Raises:
+                PermissionDeniedError: se operador que chama o metodo nao for ADM
+                DuplicateError: se existir operador com os dados fornecidos.
+                
+                ExpiredOtpError: se o codigo otp tiver expirado.
+                
+                InvalidOtpError: se o codigo otp estiver errado.
+            """
+    
+            operador_id= self.operador["id_operador"]
+    
+            # verifica se o operador é ADM
+            if self.permissao(self.operador):
+                if otp.verificar_otp(cod):
+                    #verifica campos unicos
+                    for chave, dado in dados.items():
+                        valor={chave:dado}
+                        self._repo_operador.verificar_unicidade(valor)
+        
+                    # insere os dados do novo operador no repositorio    
+                    novo_id=self._repo_operador.inserir(dados) 
+        
+                   #registra o log de audiroria
+                    auditoria.auditar(
+                       operador_id,
+                       operacao= "adicionar_operador",
+                       detalhes= f"adicionou o operador id: {novo_id}")
+        
+                    return novo_id 
+                    
+            raise PermissionDeniedError("somente ADM pode adicionar novos operadores")        
             
     def pesquisar_nome(self, nome):
         """
@@ -197,4 +202,5 @@ class ServicoOperador(PermissaoMixIn, FiltroMixIn):
              raise
           
       raise PermissionDeniedError("somente ADM pode desativar operadores")       
+
 
