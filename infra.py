@@ -93,6 +93,7 @@ class InfraBanco:
             sa.Column("identificacao", sa.String(13), unique=True, nullable=False),
             sa.Column("telefone", sa.String(15), unique= True, nullable=False),
             sa.Column("email", sa.String(255), unique= True, nullable=False),
+            sa.Column("endereco", sa.String(300), nullable=False),
             sa.Column("senha", sa.String(250), nullable=False),
             sa.Column("ADM", sa.Boolean, nullable= False),
             sa.Column("ativo", sa.Boolean, nullable=False)
@@ -131,6 +132,12 @@ class EmptyTableError(Exception):
     pass
     
 class PermissionDeniedError(Exception):
+    pass
+    
+class InvalidOtpError(Exception):
+    pass
+    
+class AttemptsExcedError(Exception):
     pass
 
 
