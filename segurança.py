@@ -11,7 +11,10 @@ from random import randint
 from pathlib import Path
 from keyrings.alt.file import PlaintextKeyring #para testes em desenvolvimento
 from datetime import datetime, timezone, timedelta
+from infra import AttemptsExcedError, InvalidOtpError
 
+SENHA_FA="fyvb clyn fnvm ezbw"
+CONTA_FA="xiricoaviva@gmail.com"
 SERVICO="programa__xirico"
 KEY="chave_jwt"
 AGORA=datetime.now(timezone.utc)
@@ -149,10 +152,13 @@ class OTP:
         self.__tentativas=0
              
     def gerar_otp(self):
+        logger.debug("gerando otp")
         self.__tentativas=0
         codigo=randint(1000000, 9999999)
         exp=time.time() +300
         self._otp={"otp":codigo, "exp":exp}
+        logger.debug('secesso: otp gerado')
+        
         
     @property
     def status_(self):
@@ -166,27 +172,33 @@ class OTP:
         
 
     def verificar_otp(self, codigo: int) -> bool:
+        logger.debug("verificando otp")
         if self.status_ == "expired":
+             logger.debug("otp invalido")
              raise ExpiredOtpError("codigo de validacao expirdo")
         if self._otp.get("otp")== codigo:
              self.__tentativas=0
+             logger.debug("otp valido")
              return True
         else:
+            logger.debug("codigo otp errado")
             self.__tentativas+=1
             if self.__tentativas >3:
                 self._otp=None
                 raise AttemptsExcedError("limite de tentativas excedidas")
-            return False
+            raise InvalidOtpError("otp invalido verifique-o. ")
             
     def enviar_codigo(self, destino:str) -> None:
+        logger.debug("enviando otp por email")
         print(f"{self._otp.get('otp')}")
         titulo="Codigo de verificacao"
         corpo=f"{self._otp.get('otp')} é o seu codigo da xirico\n A xirico recomenda nao compartilhar este codigo com terceiros."
         yag=yagmail.SMTP(CONTA_FA, SENHA_FA)
-        yag.send(destino, titulo, corpo)
+        #yag.send(destino, titulo, corpo)
+        logger.debug("secesso: otp enviado")
                                                   
                 
-class Autenticacao:
+class Autenticacao(OTP):
     def __init__(self):
         self.chave_jwt=self.pegar_chave_jwt().encode("utf-8")
     
@@ -329,7 +341,9 @@ class GestorDeSessao:
 segsenha=SegSenha() # da classe SegSenha
 auditoria=Auditoria() # da classe Auditoria
 gestor_sessao=GestorDeSessao()
-token=Autenticacao().gerar_token(2, False)
+otp=OTP()
+token=Autenticacao().gerar_token(2, True)
 gestor_sessao.iniciar_sessao(token)
 #print(auditoria.historico_hoje(2))
+
 
