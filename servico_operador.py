@@ -212,7 +212,7 @@ class ServicoOperador(PermissaoMixIn, FiltroMixIn):
             nome(str): novo nome do operador.
             
         Returns:
-            list: lista com os campos alterados
+            None
         """
         operador_id= self.operador.get("id_operador")
         
@@ -225,7 +225,7 @@ class ServicoOperador(PermissaoMixIn, FiltroMixIn):
             detalhes="editou seu nome")
             
             
-    def actualizar_identificacao(self, id_alvo,codigo, ident:str) -> list:
+    def actualizar_identificacao(self, id_alvo,codigo, ident:str) -> None:
         """
         Actualiza a identifucacao do operador alvo, só pode ser executdo por um adm e concluida apos verificao com otp do operador alvo para confirmar.
         
@@ -235,7 +235,7 @@ class ServicoOperador(PermissaoMixIn, FiltroMixIn):
             ident(str): nova identificao do operador.
             
         Returns:
-            list: lista com o campo actualizado
+            None
             
         Raises:
             EntityNotFoundError: se o operador alvo nao for encontrado.
@@ -255,5 +255,16 @@ class ServicoOperador(PermissaoMixIn, FiltroMixIn):
                 operador_id,
                 operacao="actualizar_identificacao",
                 detalhes=f"actualizou a identificacao do operador id: {id_alvo}") 
+                        
             
-            
+URL_CONEXAO="sqlite:///xirico.db"
+CONECTOR= Conector(URL_CONEXAO)
+InfraBanco(CONECTOR)
+a= RepositorioOperadores(CONECTOR)
+ser=ServicoOperador(a)
+otp.gerar_otp()
+otp.enviar_codigo("muhau")
+
+r= int(input("otp: "))
+q=ser.actualizar_identificacao(1, r,  "445678754787332")
+print(q)
