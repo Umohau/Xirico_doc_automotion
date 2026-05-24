@@ -225,4 +225,35 @@ class ServicoOperador(PermissaoMixIn, FiltroMixIn):
             detalhes="editou seu nome")
             
             
-   
+    def actualizar_identificacao(self, id_alvo,codigo, ident:str) -> list:
+        """
+        Actualiza a identifucacao do operador alvo, só pode ser executdo por um adm e concluida apos verificao com otp do operador alvo para confirmar.
+        
+        Args:
+            id_alvo(int): id do operador alvo da actulizacao.
+            codigo(int): codigo otp enviado ao operador alvo para confirmacao.
+            ident(str): nova identificao do operador.
+            
+        Returns:
+            list: lista com o campo actualizado
+            
+        Raises:
+            EntityNotFoundError: se o operador alvo nao for encontrado.
+            InvalidOtpError: se o codigo otp estiver errado.
+            ExpiredOtpError: se o otp tiver expirado.
+        """
+        operador_id=self.operador.get("id_operador")
+        
+        #verifica se e ADM
+        if not self.permissao(self.operador):
+            raise PermissionDeniedError("apenas adm pode executar esta accao")
+        if otp.verificar_otp(codigo):
+            dado={"identificacao":ident}
+            logger.debug("actualizando identificacao")
+            self._repo_operador.actualizar(id_alvo, dado)
+            auditoria.auditar(
+                operador_id,
+                operacao="actualizar_identificacao",
+                detalhes=f"actualizou a identificacao do operador id: {id_alvo}") 
+            
+            
