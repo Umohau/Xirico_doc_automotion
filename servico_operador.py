@@ -204,3 +204,25 @@ class ServicoOperador(PermissaoMixIn, FiltroMixIn):
       raise PermissionDeniedError("somente ADM pode desativar operadores")       
 
 
+    def mudar_nome(self, nome:str) -> list:
+        """
+        Altera o nome do operador para o nome fornecido, um operador so pode actualizar seu proprio nome.Registra auditotia da accao.
+        
+        Args:
+            nome(str): novo nome do operador.
+            
+        Returns:
+            list: lista com os campos alterados
+        """
+        operador_id= self.operador.get("id_operador")
+        
+        dado={"nome": nome}
+        logger.debug("actualizando nome")
+        self._repo_operador.actualizar( operador_id, dado)
+        auditoria.auditar(
+            operador_id,
+            operacao="mudar_nome",
+            detalhes="editou seu nome")
+            
+            
+   
