@@ -444,7 +444,7 @@ class RepositorioOperadores(Operacoes):
                 email(str): email do operador inativo.
                 
              Returns:
-                 bool:True se a buscar encontrar operador.
+                 dict: dicionario com os dados do operador.
             
             Raises:
                 EntityNotFoundError: se a buscs nao encontra o operador.   
@@ -459,7 +459,7 @@ class RepositorioOperadores(Operacoes):
                 if not operador:
                     raise EntityNotFoundError("operador inativo nao encontrado")
                 logger1.info("sucesso: busca de operador inativo concluida.")     
-                return operador
+                return operador._asdict()
                 
     def pegar_senha(self, email):
         """
@@ -707,6 +707,6 @@ class RepositorioAves(Operacoes):
                 total= conexao.execute(sa.func.count(self.tabela.c.id)).scalar()
                 return total
 
-
+#help(RepositorioOperadores.actualizar)
 
   
