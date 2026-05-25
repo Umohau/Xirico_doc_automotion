@@ -308,3 +308,21 @@ class ServicoOperador(PermissaoMixIn, FiltroMixIn):
                 operacao="promover_operador",
                 detalhes=f"promoveu o operador id: {id_alvo} a ADM") 
         logger.info("operador id: %d promovido a ADM", id_alvo)
+
+
+    def rebaixar_operador(self, id_alvo):
+        operador_id= self.operador.get("id_operador")
+        logger.debug("rebaixando operador id: %d", id_alvo)
+        if not self.permissao(self.operador):
+            logger.warning("falha ao rebaixar operador.")
+            raise PermissionDeniedError("apenas adm pode rebaixar operadores")
+
+        campo={"ADM": False}
+        self._repo_operador.actualizar(id_alvo, campo)
+        auditoria.auditar(
+                operador_id,
+                operacao="rebaixar_operador",
+                detalhes=f"rebaixou o operador id: {id_alvo} a operador comum") 
+        logger.info("operador id: %d rebaixado a operador comum", id_alvo)
+    
+    
