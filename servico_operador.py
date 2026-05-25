@@ -256,15 +256,40 @@ class ServicoOperador(PermissaoMixIn, FiltroMixIn):
                 operacao="actualizar_identificacao",
                 detalhes=f"actualizou a identificacao do operador id: {id_alvo}") 
                         
-            
-URL_CONEXAO="sqlite:///xirico.db"
-CONECTOR= Conector(URL_CONEXAO)
-InfraBanco(CONECTOR)
-a= RepositorioOperadores(CONECTOR)
-ser=ServicoOperador(a)
-otp.gerar_otp()
-otp.enviar_codigo("muhau")
 
-r= int(input("otp: "))
-q=ser.actualizar_identificacao(1, r,  "445678754787332")
-print(q)
+    def actualizar_contactos(self, codigo, dado):
+        """
+        Actualiza o contacto do operador (email ou telefone), verificando posse antes de efetivar a actualizacao.
+        
+        Args:
+            codigo(int): codigo otp enviado por email ou sms para verificar posse.
+            dado(dict): dicionario com email ou telefone novo do operador.
+            
+        Returns:
+            None
+        
+        Raises:
+            InvalidOtpError:se o codigo estiver errado.
+            ExpiredOtpError: se otp estiver fora de validade.
+        """
+        operador_id= self.operador.get("id_operador")
+        if otp.verificar_otp(codigo):
+            logger.debug("actualizando %s", next(iter(dado)))
+            self._repo_operador.actualizar(operador_id, dado)
+
+
+    def actualizar_endereco(self, id_alvo, endereco, codigo):
+        operador_id=self.operador.get("id_operador")
+        
+        #verifica se e ADM
+        if not self.permissao(self.operador):
+            raise PermissionDeniedError("apenas adm pode executar esta accao")
+        if otp.verificar_otp(codigo):
+            dado={"endereco":endereco}
+            logger.debug("actualizando endereco")
+            self._repo_operador.actualizar(id_alvo, dado)
+            auditoria.auditar(
+                operador_id,
+                operacao="actualizar_endereço",
+                detalhes=f"actualizou o endereço do operador id: {id_alvo}")                 
+            
