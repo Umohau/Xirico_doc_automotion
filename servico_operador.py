@@ -293,3 +293,18 @@ class ServicoOperador(PermissaoMixIn, FiltroMixIn):
                 operacao="actualizar_endereço",
                 detalhes=f"actualizou o endereço do operador id: {id_alvo}")                 
             
+
+    def promover_operador(self, id_alvo):
+        operador_id= self.operador.get("id_operador")
+        logger.debug("promovendo operador id: %d", id_alvo)
+        if not self.permissao(self.operador):
+            logger.warning("falha ao promover operador.")
+            raise PermissionDeniedError("apenas adm pode promover operadores")
+
+        campo={"ADM": True}
+        self._repo_operador.actualizar(id_alvo, campo)
+        auditoria.auditar(
+                operador_id,
+                operacao="promover_operador",
+                detalhes=f"promoveu o operador id: {id_alvo} a ADM") 
+        logger.info("operador id: %d promovido a ADM", id_alvo)
