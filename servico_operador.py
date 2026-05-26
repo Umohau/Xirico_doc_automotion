@@ -326,3 +326,17 @@ class ServicoOperador(PermissaoMixIn, FiltroMixIn):
         logger.info("operador id: %d rebaixado a operador comum", id_alvo)
     
     
+    def reativar_operador(self, email,codigo):
+        if not self.permissao(self.operador):
+            logger.warning("falha: tentativa de reactivar um operador. permissao negada." )
+            raise PermissionDeniedError("somente ADM pode reactivar operadores")
+        logger.debug("localizando operador")
+        operador=self._repo_operador.buscar_inativo(email)
+        id_alvo=operador.get("id")
+        campo={"ativo": True}
+        logger.debug("sucesso: operador localizado")
+        if otp.verificar_otp(codigo):
+            logger.debug("reactivando operador")
+            self._repo_operador.reactivar(id_alvo)
+            logger.info("sucesso: operador id: %d reactivado", id_alvo)
+            
