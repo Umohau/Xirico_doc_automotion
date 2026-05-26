@@ -301,7 +301,7 @@ class RepositorioOperadores(Operacoes):
         
     def actualizar(self, id:int, dados:dict) ->list:
         """
-        Actualida dados de um operador especificado pelo id, em campos fornecidos no argumento dados.
+        Actualida dados de um operador activo especificado pelo id, em campos fornecidos no argumento dados.
         
         Args:
             id(int): id do operador a receber actualizacao
@@ -326,7 +326,28 @@ class RepositorioOperadores(Operacoes):
             
             logger1.info("operador id: %d actualizado com sucesso- campos: %s", id , list(dados.keys()))
             return list(dados.keys())
+
         
+    def reactivar(self,  id:int) ->bool:
+        """
+        Alter o status do operador no campo ativo para True.
+        
+        Args:
+            id(int): id do operador a reactivar
+            
+        Returns:
+            bool: True se reactivado.
+            
+       
+        """   
+        reactivar= self.tabela.update().values(ativo=True).where(self.tabela.c.id==id)
+        
+        with self.engine.begin() as conexao:
+            res=conexao.execute(reactivar)
+            if res.rowcount:
+                return True
+                                                       
+                                                        
         
     def buscar_id(self, id:int) -> dict:
         """
@@ -707,6 +728,4 @@ class RepositorioAves(Operacoes):
                 total= conexao.execute(sa.func.count(self.tabela.c.id)).scalar()
                 return total
 
-#help(RepositorioOperadores.actualizar)
 
-  
