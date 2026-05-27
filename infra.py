@@ -126,6 +126,13 @@ class InfraBanco:
             sa.Column("enviado_at", sa.Date()),
             sa.Column("estado", sa.String(9), default="Pendente") 
         )  
+        
+        
+        self.exportacoes= sa.Table("exportacoes", self.metadata,
+           sa.Column("exportacao_id", sa.Integer, primary_key=True),
+           sa.Column('order_id', Integer, sa.ForeignKey("orders.order_id"), nullable=False, index=True),
+           sa.Column("processo_docs", sa.LargeBinary())    
+        )
          
         try:
             self.metadata.create_all(self.engine)
