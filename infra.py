@@ -114,6 +114,19 @@ class InfraBanco:
             sa.Column("especie", sa.String(25), nullable=False),
             sa.Column("nome_cientifico", sa.String(60), nullable= False, unique=True)              
         )
+        
+        
+        self.orders= sa.Table("orders", self.metadata,
+            sa.Column("order_id", sa.Integer, primary_key=True, nullable=False),
+            sa.Column("cliente_id", sa.Integer, sa.ForeignKey("clientes.id"), nullabe=False ),
+            sa.Column("gestor_id", sa.Integer, sa.ForeignKey("operadores.id"), nullable=False ),
+            sa.Column("ave_id", sa.Integer, sa.ForeignKey("aves.id"), nullable=False),
+            sa.Column("quantidade", sa.Integer, nullable=False),
+            sa.Column("registado_at", sa.Date(), nullable=False),
+            sa.Column("enviado_at", sa.Date()),
+            sa.Column("estado", sa.String(9), default="Pendente") 
+        )  
+         
         try:
             self.metadata.create_all(self.engine)
             logger.info("tabelas criadas com sucesso")
