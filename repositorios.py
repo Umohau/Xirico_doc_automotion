@@ -729,3 +729,37 @@ class RepositorioAves(Operacoes):
                 return total
 
 
+class RepositorioOrders:
+    def __init__(self, conector):
+        self.engine=conector.engine
+        self.metadata=conector.metadata
+        if 'orders' not in self.metadata.tables:
+            logger1.warning("Tabela orders nao encontrada no objeto metadata")
+            raise RuntimeError("""tabela orders nao encontrada no metadata\n Certifique-se de:\n
+            1. Usar o MESMO objeto Conector tanto no InfraBanco quanto na classe RepositorioOrders.""")
+        self.tabela= self.metadata.tables["orders"]
+        
+    
+    def adicionar(self, order_dados:dict):
+        """
+        Adiciona um novo pedido em orders.
+        
+        Args:
+            order_dados(dict): dicionario com os dados do novo pedido.
+            
+        Returns:
+            inr: id do novo pedido
+            
+        Raises:
+            IntegrityError: se as chaves  estrangeira for imvalida.           
+        """
+        inserir= self.tabela.insert()
+        
+        with self.engine.begin() as conexao:
+            try:
+                res= conexao.execute(inserir, order_dados)
+                id= res.inserted_primary_key[0]
+                logger.info("sucesso: novo pedido adicionado com id:%d", id)
+            except sa.exc.IntegrityError as e:
+                logger1.warning("falha: ao inserir novo  pedido em orders %s", e.params)
+                raise
