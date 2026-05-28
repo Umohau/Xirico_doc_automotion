@@ -800,6 +800,7 @@ class RepositorioOrders:
             
         Raises:
             EntityNotFoundError: se  nao encontrar o pedido alvo.
+            IntegrityError: se os novos dados tiverem um ForeignKeys invalido
         """
         actual=self.tabela.update().where(self.tabela.c.order_id==order_id)
         actual=actual.values(novos_dados)
@@ -814,4 +815,3 @@ class RepositorioOrders:
             return res
             
             
-                
