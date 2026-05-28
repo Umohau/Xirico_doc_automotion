@@ -761,10 +761,32 @@ class RepositorioOrders:
                 id= res.inserted_primary_key[0]
                 logger1.info("sucesso: novo pedido adicionado com id:%d", id)
             except sa.exc.IntegrityError as e:
-                logger1.warning("falha: ao inserir novo  pedido em orders %s", e.params)
+                logger1.warning("falha: ao inserir novo  pedido em orders\n Param: %s", e.params)
                 raise
                 
 
-
-
-
+    def deletar(self, order_id):
+        """
+        Deleta um pedido em orders.
+        
+        Args:
+            order_id(int): id do pedido a ser eliminado.
+            
+        Returns:
+           int: o numero das  linhas afetadas.
+           
+        Raises:
+            EntityNotFoundError: se o podido nao for encontrado.
+        """
+        deletar= self.tabela.delete().where(self.tabela.c.order_id== order_id)
+        
+        with self.engine.begin() as conexao:
+            logger1.debug("process: eliminando pedido %d ", order_id)
+            res=conexao.execute(deletar).rowcount
+            if not res:
+                logger1.info("falha: nao foi possivel eliminar o pedido. nao encontrado")
+                raise EntityNotFoundError(f"pedido com id {order_id} nao encontrado")
+            logger1.info("sucesso: pedido %d eliminado", order_id)
+            return res
+            
+            
