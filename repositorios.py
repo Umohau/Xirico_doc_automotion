@@ -790,3 +790,28 @@ class RepositorioOrders:
             return res
             
             
+    def actualizar(self,order_id, novos_dados):
+        """
+        Actualiza os dados do pedido substituindo os campos pelos novos dados do argumento dados.
+        
+        Args:
+            order_id(int): id do pedido alvo.
+            novos_dados(dict): dicionario com os novos dados.
+            
+        Raises:
+            EntityNotFoundError: se  nao encontrar o pedido alvo.
+        """
+        actual=self.tabela.update().where(self.tabela.c.order_id==order_id)
+        actual=actual.values(novos_dados)
+        
+        with self.engine.begin() as conexao:
+            logger1.debug("process: actualizando dados do pedido %d", order_id)
+            res=conexao.execute(actual).rowcount
+            if not res:
+                logger1.debug("falha: falha oa actualizar %s pedido %d nao encontrado.", list(novos_dados.keys()), order_id)
+                raise EntityNotFoundError(f"pedido {order_id} nao encontrado")
+            logger1.debug("sucesso: pedido %d actualizado. Campos: %s" , order_id, list(novos_dados.keys()))
+            return res
+            
+            
+                
