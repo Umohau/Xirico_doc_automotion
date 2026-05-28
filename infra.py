@@ -30,6 +30,7 @@ class  Conector:
 
     Esta classe cria e mantém uma instância de `Engine` a partir de uma string
     de conexão. A engine é lazy (conexão real ocorre apenas no primeiro uso).
+     A cada evento de conexao com a engine ativa as ForeignKeys.
     Também fornece um objeto `MetaData` para definição/reflexão de esquemas.
 
     Attributes:
@@ -70,6 +71,21 @@ class  Conector:
     def metadata(self):
         return self._metadata
     
+    #ativa automaticamente as 
+    #ForeignKeys sempre que a engine abrir uma conexao
+    @sa.event.listens_for(sa.Engine, "connect")
+    def ativar_FK( dbapi_connection, connection_record):
+        logger.debug("ativando as FK")
+        try:
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
+            logger.debug("sucesso: Fk ativados")
+        except sa.exc.SQLAlchemyError as e:
+            logger.warning("falha ao ativar FK", exc_info=True)
+            raise
+            
+            
     @property
     def engine(self):
         return self._engine
@@ -118,7 +134,7 @@ class InfraBanco:
         
         self.orders= sa.Table("orders", self.metadata,
             sa.Column("order_id", sa.Integer, primary_key=True, nullable=False),
-            sa.Column("cliente_id", sa.Integer, sa.ForeignKey("clientes.id"), nullabe=False ),
+            sa.Column("cliente_id", sa.Integer, sa.ForeignKey("clientes.id"), nullable=False ),
             sa.Column("gestor_id", sa.Integer, sa.ForeignKey("operadores.id"), nullable=False ),
             sa.Column("ave_id", sa.Integer, sa.ForeignKey("aves.id"), nullable=False),
             sa.Column("quantidade", sa.Integer, nullable=False),
@@ -130,7 +146,7 @@ class InfraBanco:
         
         self.exportacoes= sa.Table("exportacoes", self.metadata,
            sa.Column("exportacao_id", sa.Integer, primary_key=True),
-           sa.Column('order_id', Integer, sa.ForeignKey("orders.order_id"), nullable=False, index=True),
+           sa.Column('order_id', sa.Integer, sa.ForeignKey("orders.order_id"), nullable=False, index=True),
            sa.Column("processo_docs", sa.LargeBinary())    
         )
          
