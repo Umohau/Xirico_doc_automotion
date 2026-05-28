@@ -751,15 +751,20 @@ class RepositorioOrders:
             inr: id do novo pedido
             
         Raises:
-            IntegrityError: se as chaves  estrangeira for imvalida.           
+            IntegrityError: se uma chave estrangeira foi inválida.
         """
-        inserir= self.tabela.insert()
-        
+        inserir= self.tabela.insert()    
         with self.engine.begin() as conexao:
             try:
-                res= conexao.execute(inserir, order_dados)
+                logger1.debug("process: adicionando um novo pedido")
+                res=conexao.execute(inserir, order_dados)    
                 id= res.inserted_primary_key[0]
-                logger.info("sucesso: novo pedido adicionado com id:%d", id)
+                logger1.info("sucesso: novo pedido adicionado com id:%d", id)
             except sa.exc.IntegrityError as e:
                 logger1.warning("falha: ao inserir novo  pedido em orders %s", e.params)
                 raise
+                
+
+
+
+
