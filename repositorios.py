@@ -898,3 +898,32 @@ class RepositorioOrders:
             return dados
             
 
+    def buscar_order_gid(self, operador_id):
+        """
+        Busca os pedidos gerenciados por um operador especifico.
+        
+        Args:
+            operador_id(int): id do operadir alvo.
+            
+        Returns:
+            list[dict]: lista de dicionarios com os dados de cada pedido gerenciado pelo operador, ordenados por data de registro do mais recente ao mais antigo.
+            
+        Raises:
+            EntityNotFoundError: se o operador nao gerenciou nenhum pedido ate o momento de execucao do metodo
+        """
+        dados=list() 
+        busca= sa.select(self.tabela).order_by(sa.desc(self.tabela.c.registado_at))
+        busca=busca.where(self.tabela.c.gestor_id== operador_id)
+        
+        with self.engine.begin() as conexao:
+            logger1.debug("precess: buscando pedidos do gestor id: %d", operador_id)
+            res= conexao.execute(busca).fetchall()
+            if not res:
+                logger1.warning("falha: o operador id: %d ainda nao gerenciou  pedidos ", operador_id)
+                raise EntityNotFoundError("o operadot nao possue pedidos por si gerenciados")
+            for resultado in res:
+                dados.append(resultado._asdict())
+            logger1.info("secesso: a busca retornou %d pedidos gerenciados pelo operador id: %d", len(dados), operador_id)
+            return dados
+            
+            
