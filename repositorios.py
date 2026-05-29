@@ -933,3 +933,14 @@ class RepositorioOrders:
             return dados
             
             
+class RepositorioExportacoes:
+    def __init__(self, conector):
+        self.engine=conector.engine
+        self.metadata=conector.metadata
+        if 'exportacoes' not in self.metadata.tables:
+            logger1.warning("Tabela exportacoes nao encontrada no objeto metadata")
+            raise RuntimeError("""tabela exportacoes nao encontrada no metadata\n Certifique-se de:\n
+            1. Usar o MESMO objeto Conector tanto no InfraBanco quanto na classe RepositorioOrders.""")
+        self.tabela= self.metadata.tables["exportacoes"]
+        
+      
