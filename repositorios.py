@@ -809,9 +809,9 @@ class RepositorioOrders:
             logger1.debug("process: actualizando dados do pedido %d", order_id)
             res=conexao.execute(actual).rowcount
             if not res:
-                logger1.debug("falha: falha oa actualizar %s pedido %d nao encontrado.", list(novos_dados.keys()), order_id)
+                logger1.info("falha: falha oa actualizar %s pedido %d nao encontrado.", list(novos_dados.keys()), order_id)
                 raise EntityNotFoundError(f"pedido {order_id} nao encontrado")
-            logger1.debug("sucesso: pedido %d actualizado. Campos: %s" , order_id, list(novos_dados.keys()))
+            logger1.info("sucesso: pedido %d actualizado. Campos: %s" , order_id, list(novos_dados.keys()))
             return res
             
             
@@ -841,7 +841,7 @@ class RepositorioOrders:
             if not res:
                 logger1.warning("falha: tabela orders vazia")
                 raise EmptyTableError("sua tabela orders esta vazia")
-            logger1.debug("sucesso: a busca  retornou %d resultdos", len(dados))   
+            logger1.info("sucesso: a busca  retornou %d resultdos", len(dados))   
             return dados
             
             
@@ -868,7 +868,33 @@ class RepositorioOrders:
                 logger1.warning("falha: pedido %d nao encontrado", order_id)
                 raise EntityNotFoundError("pedido nao encontrado")
                 
-            logger1.debug("sucesso: busca do pedido %d concluida", order_id)
+            logger1.info("sucesso: busca do pedido %d concluida", order_id)
             return res._asdict()
+            
+
+    def buscar_orders_cid(self, cliente_id):
+        """
+        Busca todos pedidos de um cliente pelo id do cliente.
+        
+        Args:
+            cliente_id(int): id do cliete alvo
+            
+        Returns:
+            list[dict]: lista de dicionarios com os dados dos pedidos do cliete ordenados pela data de registo do mais recente ao mais antigo.
+        """
+        dados=list() 
+        busca= sa.select(self.tabela).order_by(sa.desc(self.tabela.c.registado_at))
+        busca=busca.where(self.tabela.c.cliente_id== cliente_id)
+        
+        with self.engine.begin() as conexao:
+            logger1.debug("precess: buscando pedidos do cliente id: %d", cliente_id)
+            res= conexao.execute(busca).fetchall()
+            if not res:
+                logger1.warning("falha: o cliente id: %d nao possue pedidos", cliente_id)
+                raise EntityNotFoundError("o cliente nao possue pedidos")
+            for resultado in res:
+                dados.append(resultado._asdict())
+            logger1.info("secesso: a busca retornou %d pedidos do cliente id: %d", len(dados), cliente_id)
+            return dados
             
 
