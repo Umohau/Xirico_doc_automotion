@@ -815,3 +815,33 @@ class RepositorioOrders:
             return res
             
             
+    def buscar_pedidos(self):
+        """
+        Busca todos os pedidos na tabela orders .
+        
+        Returns:
+            list[dict]: uma lista de dicionarios que contem os dados de cada pedido.
+            
+        Raises:
+            EmptyTableError: se a tabela orders estiver vazia.
+        """
+        dados=list()
+        busca= sa.select(self.tabela)
+        
+        with self.engine.begin() as conexao:
+            res= conexao.execute(busca).fetchall()
+            
+            # converte cada tupla do 
+            #objeto row em um dicionario
+            # e adiciona  na lista dados
+            for resultado in res:
+                dados.append(resultado._asdict())
+                
+            # verifica se ha resultados
+            if not res:
+                logger1.warning("falha: tabela orders vazia")
+                raise EmptyTableError("sua tabela orders esta vazia")
+            logger1.debug("sucesso: a busca  retornou %d resultdos", len(dados))   
+            return dados
+            
+            
