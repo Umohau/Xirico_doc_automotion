@@ -944,3 +944,31 @@ class RepositorioExportacoes:
         self.tabela= self.metadata.tables["exportacoes"]
         
       
+    def adicionar(self, dados:dict) -> int:
+        """
+        Insere dados de uma nova exportacao concluida.
+        
+        Args:
+            dados(dict): dados da nova exportacao
+            
+        Returns:
+            int: id da nova exportacao concluida.
+        
+        Raises:
+            IntegrityError: se alguma ForeignKey for invalida.
+        
+        """
+        inserir= self.tabela.insert()
+        
+        with self.engine.begin() as conexao:
+            logger1.debug("process: inserindo dados da exportacao")
+            try:
+                res= conexao.execute(inserir, dados)
+                logger1.info("sucesso: nova exportacao registrada")
+                return res.inserted_primary_key
+            except sa.exc.IntegrityError as e:
+                logger1.warning("falha: nao foi possivel inserir a exportacao ParmError: %s", e.params)
+                raise
+    
+    
+ 
