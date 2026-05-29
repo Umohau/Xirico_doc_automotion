@@ -845,3 +845,30 @@ class RepositorioOrders:
             return dados
             
             
+    def buscar_order_oid(self, order_id):
+        """
+        Busca um pedido pelo id do pedido na tabela orders.
+        
+        Args:
+            order_id(int): id do pedido alvo da busca.
+            
+        Return:
+            dict: dicionario com os dados do pedido.
+            
+        Raises:
+            EntityNotFoundError: se o pedido nao for encontrado.
+        """
+        busca= sa.select(self.tabela).where(self.tabela.c.order_id== order_id)
+        
+        with self.engine.begin() as conexao:
+            logger1.debug("process: buscando pedido %d", order_id)
+            res= conexao.execute(busca).first()
+            
+            if not res:
+                logger1.warning("falha: pedido %d nao encontrado", order_id)
+                raise EntityNotFoundError("pedido nao encontrado")
+                
+            logger1.debug("sucesso: busca do pedido %d concluida", order_id)
+            return res._asdict()
+            
+
