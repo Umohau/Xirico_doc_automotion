@@ -740,7 +740,7 @@ class RepositorioOrders:
         self.tabela= self.metadata.tables["orders"]
         
     
-    def adicionar(self, order_dados:dict):
+    def adicionar(self, order_dados:dict) -> int:
         """
         Adiciona um novo pedido em orders.
         
@@ -765,7 +765,7 @@ class RepositorioOrders:
                 raise
                 
 
-    def deletar(self, order_id):
+    def deletar(self, order_id: int) -> int:
         """
         Deleta um pedido em orders.
         
@@ -790,7 +790,7 @@ class RepositorioOrders:
             return res
             
             
-    def actualizar(self,order_id, novos_dados):
+    def actualizar(self,order_id: int, novos_dados: dict) -> int:
         """
         Actualiza os dados do pedido substituindo os campos pelos novos dados do argumento dados.
         
@@ -798,6 +798,9 @@ class RepositorioOrders:
             order_id(int): id do pedido alvo.
             novos_dados(dict): dicionario com os novos dados.
             
+        Return:
+            int: numero de pedidos actualizados.
+             
         Raises:
             EntityNotFoundError: se  nao encontrar o pedido alvo.
             IntegrityError: se os novos dados tiverem um ForeignKeys invalido
@@ -815,7 +818,7 @@ class RepositorioOrders:
             return res
             
             
-    def buscar_pedidos(self):
+    def buscar_pedidos(self) -> list[dict]:
         """
         Busca todos os pedidos na tabela orders .
         
@@ -845,7 +848,7 @@ class RepositorioOrders:
             return dados
             
             
-    def buscar_order_oid(self, order_id):
+    def buscar_order_oid(self, order_id: int) -> dict:
         """
         Busca um pedido pelo id do pedido na tabela orders.
         
@@ -872,7 +875,7 @@ class RepositorioOrders:
             return res._asdict()
             
 
-    def buscar_orders_cid(self, cliente_id):
+    def buscar_orders_cid(self, cliente_id: int) -> list[dict]:
         """
         Busca todos pedidos de um cliente pelo id do cliente.
         
@@ -901,7 +904,7 @@ class RepositorioOrders:
             return dados
             
 
-    def buscar_order_gid(self, operador_id):
+    def buscar_order_gid(self, operador_id: int) -> list[dict]:
         """
         Busca os pedidos gerenciados por um operador especifico.
         
