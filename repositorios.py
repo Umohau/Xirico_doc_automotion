@@ -881,6 +881,9 @@ class RepositorioOrders:
             
         Returns:
             list[dict]: lista de dicionarios com os dados dos pedidos do cliete ordenados pela data de registo do mais recente ao mais antigo.
+            
+        Raises:
+            EntityNotFoundError: se o cliente nao possue nenhum pedido ate o momento de execucao do metodo
         """
         dados=list() 
         busca= sa.select(self.tabela).order_by(sa.desc(self.tabela.c.registado_at))
