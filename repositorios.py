@@ -970,5 +970,30 @@ class RepositorioExportacoes:
                 logger1.warning("falha: nao foi possivel inserir a exportacao ParmError: %s", e.params)
                 raise
     
-    
- 
+
+    def deletar(self, expo_id: int) -> int:
+        """
+        Deleta um registro da tabela exportacoes pelo seu id.
+        
+        Args:
+            expo_id(int): id do processo a ser excluido.
+            
+        Returns:
+            int: numero de processos excluidos
+            
+        Raises:
+            EntityNotFoundError: se o processo nao for encontrado na tabela.
+        """
+        deletar= self.tabela.delete().where(self.tabela.c.exportacao_id == expo_id)
+        
+        with self.engine.begin() as conexao:
+            logger1.debug("process: deletando exportacao id: %d", expo_id)
+            res= conexao.execute(deletar).rowcount
+            
+            if not res:
+                logger1.info("falha: nao foi possivel deletar exportacao id: %d nao encontrada", expo_id)
+                raise EntityNotFoundError("exportacao nao econtrada")
+            logger1.info("sucesso: exportacao id: %d deletada", expo_id)
+            return res
+
+
