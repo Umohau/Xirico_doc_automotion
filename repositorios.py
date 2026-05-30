@@ -942,6 +942,7 @@ class RepositorioExportacoes:
             raise RuntimeError("""tabela exportacoes nao encontrada no metadata\n Certifique-se de:\n
             1. Usar o MESMO objeto Conector tanto no InfraBanco quanto na classe RepositorioOrders.""")
         self.tabela= self.metadata.tables["exportacoes"]
+        self.orders= self.metadata.tables["orders"]
         
       
     def adicionar(self, dados:dict) -> int:
@@ -997,3 +998,57 @@ class RepositorioExportacoes:
             return res
 
 
+    def actualizar(self, dados:dict) -> list:
+        actualizar=self.tabela.update().where(self.tabela.c.exportacao_id== expo_id)
+        actualizae=actualizar.values(dados)
+        
+        with self.engine.begin() as conexao:
+            logger1.debug("process: actualizando dados da exportacao %d", expo_id)
+            res= conexao.execute(actualizar)
+            if not res:
+                logger1.info("falha: nao foi possivel actualizar exportacao %d. nao encontrada")
+                raise EntityNotFoundError("exportacao nao encontrada")
+            logger1.info("sucesso: exportacao %d actualizada", expo_id)
+            return res
+            
+
+    def buscar_epoca(self, data_inicio, data_fim) -> list[dict]:
+        """
+        Busca por exportacoes em intervalo de tempo (date) fornecido.
+        
+        Args:
+            data_inicio(date): data apartir da qual começa a busca.
+            data_fim(date): data maxima ate onde vai  a busca.
+            
+        Returns:
+            list[dict]: lista de dicionarios como os dados de cada exportacao, organizados por data da mais recente a mais antiga.
+            
+        Raises:
+            EntityNotFoundError: se nao houverem registros para o intervalo fornecido
+        """
+        dados= list() 
+        busca= sa.select(self.tabela, self.orders.c.enviado_at)
+        
+        # cria um join entre as tabelas
+        #orders e exportacoes
+        busca=busca.select_from(self.tabela.join(self.orders, self.tabela.c.order_id== self.orders.c.order_id))      
+        #filtra os dados pelo intervalo 
+        #de datas
+        busca=busca.where(self.orders.c.registado_at.between(data_inicio, data_fim))
+        
+        #organiza de forma decrescente
+        busca=busca.order_by(self.orders.c.registado_at.desc())             
+        
+        with self.engine.begin() as conexao:
+            logger1.debug("buscando exportacoes da epoca %s a %s", data_inicio, data_fim)
+            res= conexao.execute(busca).fetchall()
+            if not res:
+                logger1.warning("falha: nao foram encontrados registros  na epoca %s a %s", data_inicio, data_fim)
+                raise EntityNotFoundError("nenhum registro encontrado na epoca definida")
+            for resultado in res:
+                dados.append(resultado._asdict())
+            logger1.info("sucesso: encontrados %d registros da epoca %s a %s", len(dados), data_inicio, data_fim)   
+            return dados
+        
+
+          
