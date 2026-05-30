@@ -1090,7 +1090,7 @@ class RepositorioExportacoes:
         
     def buscar_exportacao_cl(self, cliente_id: int) -> list[dict]:
         """
-        Busca todas as exportacoes a um cliente pelo seu id.
+        Busca todas as exportacoes feitas a um cliente pelo seu id.
         
         Args:
             cliente_id(int): id do cliente alvo.
@@ -1104,29 +1104,16 @@ class RepositorioExportacoes:
         Note:
             Os resultados incluem a data de envio obtida em orders.
         """
-        dados=list()
-        busca=sa.select(self.tabela, self.orders.c.enviado_at)
-        
-        #faz join entre exportacoes e orders usando order_id
-        busca=busca.select_from(self.tabela.join(self.orders, self.tabela.c.order_id== self.orders.c.order_id)) 
-         
-         #filtra pelo id do cliente
-        busca=busca.where(self.orders.c.cliente_id==cliente_id)
-        
-        #ordena pela data da mais recente a mais antiga
-        busca=busca.order_by(self.orders.c.enviado_at.desc())
-        
-        with self.engine.begin() as conexao:
-            logger1.debug("buscando exportacoes do cliente id%d", cliente_id)
-            
-            res= conexao.execute(busca).fetchall()
-            
-            if not res:
+        dados=self._buscar_termo("cliente_id", cliente_id)
+        if not dados:
                 logger1.warning("falha: nao ha registros de exportacoes referentes ao cliente id%d", cliente_id)
                 raise EntityNotFoundError("nao foram encontradas registros de exportacao para o cliente")
-            for resultado in res:
-                dados.append(resultado._asdict())     
-            logger1.info("sucesso: encontradas %d exportacoes do cliete id%d", len(dados), cliente_id)
-            return dados
+            
+        logger1.info("sucesso: encontradas %d exportacoes do cliete id%d", len(dados), cliente_id)
+        return dados
+        
+            
+            
+         
   
   
