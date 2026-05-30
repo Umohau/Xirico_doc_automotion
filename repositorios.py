@@ -1054,6 +1054,40 @@ class RepositorioExportacoes:
             return dados
         
 
+    def _buscar_termo(self, coluna_o, termo_o):
+        """
+        Busca exportacoes usando uma coluna fornecida e o termo da busca.
+        Args:
+            coluna_o(str): nome da coluna , sera usado para filtrar os resultados.
+            termo_o( str| int): termo de comparacao com o valor da coluna para o filtro where.
+            
+        Returns:
+            list[dict]: lista de dicionarios com os dados das exportacoes ordenados da mais recente a mais antiga.
+        """
+        dados=list() #para acumular os dicionarios
+        #define a coluna para filtro
+        coluna= self.orders.c[coluna_o]
+        
+        busca= sa.select(self.tabela, self.orders.c.enviado_at)
+        
+        #cria um join entre as tabelas orders e exportacoes
+        busca= busca.select_from(self.tabela.join(self.orders, self.tabela.c.order_id == self.orders.c.order_id))
+        
+        #filtra pela coluna e termo informados
+        busca= busca.where(coluna==termo_o)
+        
+        #ordena por data mais recente
+        busca=busca.order_by(self.orders.c.enviado_at.desc())
+        
+        #realiza a busca 
+        with self.engine.begin() as conexao:
+            res=conexao.execute(busca)
+            
+            for resultado in res.mappings():
+                dados.append(dict(resultado))
+            return dados
+            
+        
     def buscar_exportacao_cl(self, cliente_id: int) -> list[dict]:
         """
         Busca todas as exportacoes a um cliente pelo seu id.
@@ -1096,4 +1130,3 @@ class RepositorioExportacoes:
             return dados
   
   
-          
