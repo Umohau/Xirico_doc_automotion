@@ -1113,7 +1113,26 @@ class RepositorioExportacoes:
         return dados
         
             
-            
+    def buscar_exportacoes_oid(self, order_id):
+         """
+         Busca uma exportacao pelo seu id.
+         
+         Args:
+             order_id(int): id da exportacao alvo da busca.
+             
+         Returns:
+             dict: dicionario comos dados da exportacao.
+             
+         Raises:
+             EntityNotFoundError: se a exportacao nao for emcontrada
+         """
+         dados= self._buscar_termo("order_id", order_id)
+         if not dados:
+             logger1.warning("falha: nao foi encontrada uma exportacao que corrw")
+             raise EntityNotFoundError("nenhuma exportacao com id fornecido")
+         logger.info("sucesso: exportacao %d localizada", order_id)
+         return dados[0]
          
   
   
+help(RepositorioExportacoes)
