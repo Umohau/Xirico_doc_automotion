@@ -1134,5 +1134,25 @@ class RepositorioExportacoes:
          return dados[0]
          
   
-  
+    def buscar_exportacoes_gid(self, operador_id):
+        """
+        Busca todas as exportacoes gerenciadas pelo operador fornecido em operador_id.
+        
+        Args:
+            operador_id(int): id do operador alvo.
+            
+        Returns:
+            list[dict]: lista de dicionarios com as exportacoes gerenciadas pelo operador, odenadas da mais recente a mais antiga.
+            
+        Raises:
+            EntityNotFoundError: se nenhuma exportacao gerida pelo operador for encontrada.
+        """
+        
+        dados=self._buscar_termo("gestor_id", operador_id)
+        
+        if not dados:
+            logger.warning("nenhuma exportacao gerida pelo operador id%d", operador_id)
+            raise EntityNotFoundErrot("nenhuma exportacao referente ao operador informado")
+        logger.info("a busca encontrou %d exportacoes geridas pelo operador id%d." , len(dados), operador_id)
+        return dados
 help(RepositorioExportacoes)
