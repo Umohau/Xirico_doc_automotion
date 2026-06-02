@@ -108,6 +108,7 @@ class RepositorioClientes(Operacoes):
     def deletar(self, id:int) -> int:
         '''
         Deleta um cliente da tabela clientes
+        (faz um soft delete alterando o estado ativo de true para false)
         
         Args:
             id(int): id do cliente deletado
@@ -118,7 +119,7 @@ class RepositorioClientes(Operacoes):
         Raises:
             EntityNotFoundError: se o id do cliente nao for encontrado
         '''
-        deletar= self.tabela.delete().where(self.tabela.c.id==id)
+        deletar= self.tabela.update().values(ativo=False).where(self.tabela.c.id==id)
         
         with self.engine.begin() as conexao:
             resultado=conexao.execute(deletar).rowcount
@@ -1115,7 +1116,7 @@ class RepositorioExportacoes:
             
     def buscar_exportacoes_oid(self, order_id):
          """
-         Busca uma exportacao pelo seu id.
+         Busca uma exportacao pelo  id do pedido.
          
          Args:
              order_id(int): id da exportacao alvo da busca.
@@ -1130,7 +1131,7 @@ class RepositorioExportacoes:
          if not dados:
              logger1.warning("falha: nao foi encontrada uma exportacao que corrw")
              raise EntityNotFoundError("nenhuma exportacao com id fornecido")
-         logger.info("sucesso: exportacao %d localizada", order_id)
+         logger1.info("sucesso: exportacao %d localizada", order_id)
          return dados[0]
          
   
@@ -1151,8 +1152,9 @@ class RepositorioExportacoes:
         dados=self._buscar_termo("gestor_id", operador_id)
         
         if not dados:
-            logger.warning("nenhuma exportacao gerida pelo operador id%d", operador_id)
+            logger1.warning("nenhuma exportacao gerida pelo operador id%d", operador_id)
             raise EntityNotFoundErrot("nenhuma exportacao referente ao operador informado")
-        logger.info("a busca encontrou %d exportacoes geridas pelo operador id%d." , len(dados), operador_id)
+        logger1.info("a busca encontrou %d exportacoes geridas pelo operador id%d." , len(dados), operador_id)
         return dados
-help(RepositorioExportacoes)
+
+
