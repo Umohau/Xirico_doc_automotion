@@ -146,7 +146,7 @@ class RepositorioClientes(Operacoes):
             EntityNotFoundError: se nenhum clinte for encontrado com o id fornecido
             
         """
-        actualizar= self.tabela.update().where(sa.and_(self.tabela.c.id==id, self.tabela.c.ativo==True)
+        actualizar= self.tabela.update().where(sa.and_(self.tabela.c.id==id, self.tabela.c.ativo==True))
         actualizar=actualizar.values(dados)
     
         with self.engine.begin() as conexao:
@@ -225,18 +225,29 @@ class RepositorioClientes(Operacoes):
             return dados
 
 
-    def reativar(self):
+    def reativar(self , cliente_id):
         """
         Reativa um cliente inativo, alterando seu estado ativo de False para True.
+        
+        Args:
+            cliente_id(int): id alvo da operacao.
+            
+        Returns:
+            int: clientes reactivadoa
+            
+        Raises:
+            EntityNotFoundError: se o cliente inativo nao for encontrado.
         """
-        activar= self.tabela.update().values(ativo=True).where(sa.and(self.tabela.c.id== id_cliente, self.tabela.c.ativo==False))
+        activar= self.tabela.update().values(ativo=True).where(sa.and_(self.tabela.c.id== cliente_id, self.tabela.c.ativo==False))
         
         with self.engine.begin() as conexao:
             res=conexao.execute(activar).rowcount
+            logger1.debug("process: reativando operador")
             if not  res:
-                logger.warning("falha: ao  reativar olaliente ja ativo ou nao existe")
-                raise EntityNotFoundError("cliente inativo nao encontrado")
-            logge1.info("sucesso: cliente reativado.")
+                logger1.warning("falha: ao  reativar cliente id%d. Nao encontrado", cliente_id)
+                raise EntityNotFoundError("cliente id%d inativo nao encontrado", cliente_id)
+            logger1.info("sucesso: cliente id%d reativado.", cliente_id)
+        
         
     @property
     def total_registros(self):
@@ -1170,4 +1181,11 @@ class RepositorioExportacoes:
         logger1.info("a busca encontrou %d exportacoes geridas pelo operador id%d." , len(dados), operador_id)
         return dados
 
+URL_CONEXAO="sqlite:///xirico.db"
+CONECTOR= Conector(URL_CONEXAO)
+InfraBanco(CONECTOR)
+a= RepositorioClientes(CONECTOR)
 
+dados={'nome': 'umohau', 'dominio': 'muh0a37', 'telefone': '8827088389', 'email': 'muhauhar6a310@gmail.com', 'endereco': 'moamba, matadouro'}
+#a.inserir(dados)
+a.reativar(1)
