@@ -121,7 +121,8 @@ class InfraBanco:
             sa.Column("dominio", sa.String(255), unique=True, nullable=True),
             sa.Column("telefone", sa.String(15), unique=True, nullable= False),
             sa.Column("email", sa.String(255), unique= True, nullable= False),
-            sa.Column("endereco", sa.String(300), nullable=False)
+            sa.Column("endereco", sa.String(300), nullable=False),
+            sa.Column("ativo", sa.Boolean(), default=True)
         )
         
         self.aves=sa.Table("aves", self.metadata,
