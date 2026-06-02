@@ -119,7 +119,7 @@ class RepositorioClientes(Operacoes):
         Raises:
             EntityNotFoundError: se o id do cliente nao for encontrado
         '''
-        deletar= self.tabela.update().values(ativo=False).where(self.tabela.c.id==id)
+        deletar= self.tabela.update().values(ativo=False).where(sa.and_(self.tabela.c.id==id, self.tabela.c.ativo==True))
         
         with self.engine.begin() as conexao:
             resultado=conexao.execute(deletar).rowcount
@@ -146,7 +146,7 @@ class RepositorioClientes(Operacoes):
             EntityNotFoundError: se nenhum clinte for encontrado com o id fornecido
             
         """
-        actualizar= self.tabela.update().where(self.tabela.c.id==id)
+        actualizar= self.tabela.update().where(sa.and_(self.tabela.c.id==id, self.tabela.c.ativo==True)
         actualizar=actualizar.values(dados)
     
         with self.engine.begin() as conexao:
@@ -161,7 +161,7 @@ class RepositorioClientes(Operacoes):
        
        
     def buscar_id(self, id:int) -> dict:
-        busca= sa.select(self.tabela).where(self.tabela.c.id==id)
+        busca= sa.select(self.tabela).where(sa.and_(self.tabela.c.id==id, self.tabela.c.ativo==True))
     
         with self.engine.begin() as conexao:
             res=conexao.execute(busca).first()
@@ -174,7 +174,7 @@ class RepositorioClientes(Operacoes):
         
     def buscar_tudo(self) -> list[dict]:
         """
-        busca clientes na tabela clientes, retorna todos os registros da tabela
+        busca clientes activos na tabela clientes, retorna todos os registros da tabela
         
         Returns:
             list[dict]: uma lista com dicionarios contendo dados resultados da busca
@@ -183,7 +183,7 @@ class RepositorioClientes(Operacoes):
             EmptyTableError: se a tabela estiver vazia
         """
         dados=list()
-        busca= sa.select(self.tabela) 
+        busca= sa.select(self.tabela).where(self.tabela.c.ativo==True)
         with self.engine.begin() as conexao:
             res=conexao.execute(busca)
             for resultado in res.fetchall():
@@ -211,8 +211,8 @@ class RepositorioClientes(Operacoes):
         """
         dados=list()
         busca= sa.select(self.tabela)
-        busca=busca.where(
-        self.tabela.c.nome.ilike(f'%{nome}%'))    
+        busca=busca.where(sa.and_(
+        self.tabela.c.nome.ilike(f'%{nome}%'), self.tabela.c.ativo==True))    
         
         with self.engine.begin() as conexao:
             res=conexao.execute(busca)
@@ -228,7 +228,7 @@ class RepositorioClientes(Operacoes):
     @property
     def total_registros(self):
         """
-        Consulta quantos clientes tem no banco(na tabela clientes)
+        Consulta quantos clientes tem no banco(na tabela clientes) incluindo os inativos.
         
         Returns:
             int: A quntidade total de clientes no banco
