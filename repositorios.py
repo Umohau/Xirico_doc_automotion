@@ -223,7 +223,20 @@ class RepositorioClientes(Operacoes):
                 raise EntityNotFoundError(f"nenhum cliente corrsponde ao nome '{nome}")
             logger1.info("A busca por nome retornou %d resultado de clientes para '%s'", len(dados), nome)
             return dados
+
+
+    def reativar(self):
+        """
+        Reativa um cliente inativo, alterando seu estado ativo de False para True.
+        """
+        activar= self.tabela.update().values(ativo=True).where(sa.and(self.tabela.c.id== id_cliente, self.tabela.c.ativo==False))
         
+        with self.engine.begin() as conexao:
+            res=conexao.execute(activar).rowcount
+            if not  res:
+                logger.warning("falha: ao  reativar olaliente ja ativo ou nao existe")
+                raise EntityNotFoundError("cliente inativo nao encontrado")
+            logge1.info("sucesso: cliente reativado.")
         
     @property
     def total_registros(self):
