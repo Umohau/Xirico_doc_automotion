@@ -129,7 +129,9 @@ class InfraBanco:
             sa.Column("id",sa.Integer ,primary_key=True),
             sa.Column("nome_comum", sa.String(50), nullable=False),
             sa.Column("especie", sa.String(25), nullable=False),
-            sa.Column("nome_cientifico", sa.String(60), nullable= False, unique=True)              
+            sa.Column("nome_cientifico", sa.String(60), nullable= False, unique=True),
+            sa.Column("preco", sa.Integer, nullable=False),
+            sa.Column("disponivel", sa.Bolean(), default=True)         
         )
         
         
