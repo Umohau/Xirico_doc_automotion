@@ -130,7 +130,7 @@ class RepositorioClientes(Operacoes):
             logger1.warning("falha ao deletar cliente de id  %d -nao encontrado", id)
             raise EntityNotFoundError('cliente nao encontrado ')
             
-        
+
     def actualizar(self, id:int, dados:dict) ->list:
         """
         Actualida dados de um cliente especificado pelo id, em campos fornecidos no argumento dados.
@@ -609,7 +609,7 @@ class RepositorioAves(Operacoes):
         
     def deletar(self, id:int) -> int:
         '''
-        Deleta uma ave da tabela aves
+        Deleta uma ave da tabela aves (faz um soft-delete alterando o estado de disponivel de True para False))
         
         Args:
             id(int): id da ave deletada
@@ -620,7 +620,11 @@ class RepositorioAves(Operacoes):
         Raises:
             EntityNotFoundError: se o id da ave nao for encontrado
         '''
-        deletar= self.tabela.delete().where(self.tabela.c.id==id)
+        deletar= self.tabela.update().values(disponivel=False)
+        deletar=deletar.where(sa.and_(
+        self.tabela.c.id==id,
+        self.tabela.c.disponivel==True
+        ))
         
         with self.engine.begin() as conexao:
             resultado=conexao.execute(deletar).rowcount
@@ -631,7 +635,37 @@ class RepositorioAves(Operacoes):
             logger1.warning("falha ao deletar Ave de id  %d -nao encontrado", id)
             raise EntityNotFoundError('ave  nao encontrada')
         
+
+    def  disponibilizar(self, ave_id:int) -> None:
+        """
+        Torna uma ave que ja tenha sido 
+        inserida e que foi eliminada  
+        disponivel novamente para operacoes
         
+        Args:
+            ave_id(int): id da ave alvo.
+            
+        Return:
+            None
+            
+        Raises:
+            EntityNotFoundErrror: se a ave alvo nao existir ou ja estiver disponivel.
+        """
+        dispo= self.tabela.update().values(disponivel=True)
+        dispo=dispo.where(sa.and_(
+            self.tabela.c.id==ave_id,
+            self.tabela.c.disponivel==False
+            ))
+            
+        with self.engine.begin() as conexao:
+            logger1.debug("disponibilizando ave id %d", ave_id)
+            res=conexao.execute(dispo).rowcount
+            if not res:
+                logger1.warning("ave id %d nao encontrada", ave_id)
+                raise EntityNotFoundError(f"ave id {ave_id} nao encontrada, ave ja disponivel ou nao existe")
+            logger1.info("sucesso: ave id %d redisponibilizada.", ave_id)
+            return
+            
     def actualizar(self, id:int, dados:dict) ->list:
         """
         Actualida dados de uma ave especificada pelo id, em campos fornecidos no argumento dados.
@@ -647,7 +681,10 @@ class RepositorioAves(Operacoes):
             EntityNotFoundError: se nenhuma ave for encontrada com o id fornecido
             
         """
-        actualizar= self.tabela.update().where(self.tabela.c.id==id)
+        actualizar= self.tabela.update().where(sa.and_(
+        self.tabela.c.id==id,
+        self.tabela.c.disponivel==True
+        ))
         actualizar=actualizar.values(dados)
     
         with self.engine.begin() as conexao:
@@ -675,7 +712,10 @@ class RepositorioAves(Operacoes):
         Raises:
             EntityNotFound: se nenhuma ave for encontrada com o id fornecido
         """
-        busca= sa.select(self.tabela).where(self.tabela.c.id==id)
+        busca= sa.select(self.tabela).where(sa.and_(
+        self.tabela.c.id==id,
+        self.tabela.c.disponivel==True
+        ))
         
         with self.engine.begin() as conexao:
             res=conexao.execute(busca).first()
@@ -696,7 +736,7 @@ class RepositorioAves(Operacoes):
             EmptyTableError: se a tabela estiver vazia
         """
         dados=list()
-        busca= sa.select(self.tabela) 
+        busca= sa.select(self.tabela).where(self.tabela.c.disponivel==True) 
         with self.engine.begin() as conexao:
             res=conexao.execute(busca)
             for resultado in res.fetchall():
@@ -725,10 +765,11 @@ class RepositorioAves(Operacoes):
         """
         dados=list()
         busca= sa.select(self.tabela)
-        busca=busca.where(sa.or_(
+        busca=busca.where(sa.and_(
+        sa.or_(
         self.tabela.c.nome_comum.ilike(f"%{nome}%"),
-        self.tabela.c.nome_cientifico.ilike(f"%{nome}%"))
-        )
+        self.tabela.c.nome_cientifico.ilike(f"%{nome}%")), self.tabela.c.disponivel==True
+        ))
         
         with self.engine.begin() as conexao:
             res=conexao.execute(busca)
@@ -1181,11 +1222,3 @@ class RepositorioExportacoes:
         logger1.info("a busca encontrou %d exportacoes geridas pelo operador id%d." , len(dados), operador_id)
         return dados
 
-URL_CONEXAO="sqlite:///xirico.db"
-CONECTOR= Conector(URL_CONEXAO)
-InfraBanco(CONECTOR)
-a= RepositorioClientes(CONECTOR)
-
-dados={'nome': 'umohau', 'dominio': 'muh0a37', 'telefone': '8827088389', 'email': 'muhauhar6a310@gmail.com', 'endereco': 'moamba, matadouro'}
-#a.inserir(dados)
-a.reativar(1)
