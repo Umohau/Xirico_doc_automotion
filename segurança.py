@@ -14,7 +14,7 @@ from datetime import datetime, timezone, timedelta
 from infra import AttemptsExcedError, InvalidOtpError
 
 SENHA_FA="fyvb clyn fnvm ezbw"
-CONTA_FA="xiricoaviva@gmail.com"
+CONTA_FA="exemplo@gmail.com"
 SERVICO="programa__xirico"
 KEY="chave_jwt"
 AGORA=datetime.now(timezone.utc)
@@ -347,3 +347,5 @@ gestor_sessao.iniciar_sessao(token)
 #print(auditoria.historico_hoje(2))
 
 
+#extrair logica de enviar para um metodo
+#refactorarOTP
