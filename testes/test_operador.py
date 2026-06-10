@@ -1,0 +1,160 @@
+import sys, os
+from unittest.mock import Mock, PropertyMock
+import pytest
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+from operador import Operador
+import exc
+
+  
+class Test_Operador:
+    @pytest.fixture
+    def mock_perfil(self):
+        mock=Mock()
+        type(mock).id=PropertyMock(return_value=1)
+        type(mock).ADM=PropertyMock(return_value= True)
+        
+        return mock
+        
+    @pytest.fixture
+    def mock_autenticador(self):
+        mock=Mock()
+        mock.verificar_otp.return_value=True
+        return mock
+        
+    @pytest.fixture
+    def  mock_auditoria(self):
+        return Mock()
+
+    @pytest.fixture
+    def mock_repo_operador(self):
+        mock=Mock()
+        mock.verificar_unicidade.return_value=True
+        mock.inserir.return_value=1
+        return mock
+        
+    @pytest.fixture
+    def operador(self, mock_repo_operador, mock_autenticador, mock_auditoria, mock_perfil):
+        return Operador(mock_repo_operador, mock_autenticador, mock_auditoria, mock_perfil)
+        
+    @pytest.mark.positive
+    def test_adicionar_operador(self, operador, mock_repo_operador, mock_autenticador, mock_auditoria):
+        """
+        Given: um objeto operador com o metodo adicionar_operador.
+        
+        when:
+            o metodo adicionar_operador é chamado  por um perfill ADM e com  um dicionario dados e otp validos.
+            
+        then:
+            o metodo adicionar deve retornar 1
+            o autenticador deve ser chamado uma unica vez para o otp informad
+            o metodo inserir do repositorio chamado  uma vez para dados.
+            auditar de auditoria deve ser chamado para registrar a acao
+            
+        
+        fixtures:
+            operdaor: objeto operdor usado para chamr o metodo adicionr_operador.
+            
+            mock_repo_operador:
+                
+                configurdo para retornar True na chamada de virificar_unicidade.
+                simula o repositorio, usado para verificr se o repositerio é chamado para verificar_unicidade e persistir os dados.
+            
+            mock_autenticador:
+                configurdo para retornar True á chamada do metodo verificar_otp.
+                usado para verificar o metodo foi chamado uma vez com o otp fornercido.
+           
+           mock_auditoria:
+               usado para verificar se auditar é chamado para registar a accao.
+        """
+        dados={"nome":"Umohau"}
+        otp="3333"
+        
+        assert operador.adicionar_operador(dados, otp) ==1
+        
+        mock_autenticador.verificar_otp.assert_called_once_with(otp)
+        
+        mock_repo_operador.verificar_unicidade.assert_called()
+        
+        mock_repo_operador.inserir.assert_called_once_with(dados)
+        mock_auditoria.auditar.assert_called_once()
+
+      
+    @pytest.mark.negative
+    def test_adicionar_cliente_otp_errado(self, operador, mock_repo_operador, mock_autenticador):
+        """
+        given: um objeto operador com metodo adicionar_operador.
+        
+        when:
+            o metodo adicionar operador é chamado com o otp invalido.
+            
+         then:
+             autenticador(mock) deve lançar InvalidOtpError.
+             o repositorio nao deve ser chamado nem para verificar_unicidade, sequer para inserir os dados.
+        """
+        #configa autenicador para levantar excessao (oto invalido)
+        mock_autenticador.verificar_otp.side_effect=exc.InvalidOtpError("otp invalido")
+        
+        #dados simulados imcompletos
+        dados={"nome":"Umohau"}
+        otp="3333"
+        
+        with pytest.raises(exc.InvalidOtpError):
+            operador.adicionar_operador(dados, otp)
+            
+       
+        mock_repo_operador.verificar_unicidade.assert_not_called()
+        mock_repo_operador.inserir.assert_not_called()
+        
+        
+    @pytest.mark.negative
+    def test_adicionar_operador_com_nao_Adm_(self, operador, mock_perfil,mock_autenticador):
+        """
+        given: objeto operador com metodo adicionar_operador.
+        
+        when:
+            o metodo adicionar operador é chamado por um perfil sem permissao ADM.
+            
+        then:
+            o metodo adicionar_operador deve levantar a excecao PermissionDeniedError
+            e nao deve prosseguir para chamar autenticador.
+        """
+        
+        #configura perfil para nao ADM(sem permissao de ADM)
+        type(mock_perfil).ADM = PropertyMock(return_value=False)
+        
+        #dados simulados imcompletos
+        dados={"nome":"Umohau"}
+        otp="3333"
+        
+        with pytest.raises(exc.PermissionDeniedError):
+            operador.adicionar_operador(dados, otp)
+            
+        mock_autenticador.verificar_otp.assert_not_called()
+        
+        
+    @pytest.mark.negative
+    def test_adicionar_operador_dados_existentes(self, operador, mock_repo_operador):
+        """
+        given: objeto operador com metodo adicionar_operador.
+        
+        when:
+            adicionar_operador é chamado com um dicionario que contem dados duplicados.
+            
+        then:
+            o metodo verificar_uicidade  deve levantar DuplicateError.
+            o metodo inserir nao deve ser chamado.
+        """
+        
+        #configura verificar_unicidade para levantar DuplicateError(dado nao unico)
+        mock_repo_operador.verificar_unicidade.side_effect=exc.DuplicateError("existe operador com os dados fornecidos")
+        
+        #dados simulados imcompletos
+        dados={"nome":"Umohau"}
+        otp="3333"
+        
+        with pytest.raises(exc.DuplicateError):
+            operador.adicionar_operador(dados, otp)
+            
+        mock_repo_operador.inserir.assert_not_called()
