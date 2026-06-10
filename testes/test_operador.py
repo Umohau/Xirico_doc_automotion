@@ -158,3 +158,24 @@ class Test_Operador:
             operador.adicionar_operador(dados, otp)
             
         mock_repo_operador.inserir.assert_not_called()
+        
+        
+    @pytest.mark.positive
+    def test_desativar_operador(self, operador, mock_repo_operador, mock_auditoria):
+        """
+        given: um objeto operador com metodo desativar_operador.
+        
+        when:
+            o metodo desactivar operador é chamado passando um id_alvo que exuste no banco.
+            
+        then:
+            o metodo deletar do repositorio deve ser chamado como id_alvo e retornar 1 .
+            o metodo auditar deve ser chamadado para registar a accao.
+        """
+        id_alvo=2
+        mock_repo_operador.deletar.return_value=1
+        
+        operador.desativar_operador(id_alvo)
+        
+        mock_repo_operador.deletar.assert_called_with(id_alvo)
+        mock_auditoria.auditar.assert_called()
