@@ -179,3 +179,42 @@ class Test_Operador:
         
         mock_repo_operador.deletar.assert_called_with(id_alvo)
         mock_auditoria.auditar.assert_called()
+        
+    
+    @pytest.mark.negative
+    def test_desativar_operador_alvo_nao_encontrado(self, operador, mock_repo_operador, mock_auditoria):
+         
+         """
+         given: um objeto operador com o metodo desativar operador.
+         
+         when::
+             o metodo desativar operador é chamado com um id que nao existe no banco ou ja se encontra inativo.
+             
+         then:
+             o metodo deletar do repositoroio deve lançar EntityNotFound. e accao nao deve ser regustrada
+         """
+         mock_repo_operador.deletar.side_effect= exc.EntityNotFoundError("operador alvo nao encontrado")
+         id_alvo=2
+         with pytest.raises(exc.EntityNotFoundError):
+            operador.desativar_operador(id_alvo)
+         mock_auditoria.auditar.assert_not_called()
+        
+        
+    @pytest.mark.negative
+    def test_desativar_operador_com_perfil_nao_adm(self, operador, mock_repo_operador, mock_perfil):
+        """
+        given:
+            um objeto operador com o metodo desativar_operador.
+            
+        when:
+            o metodo desativar_operador  é chamado por um perfil que nao seja administrador.
+            
+        then:
+            deve ser levantada a excessao PermissionDeniedError. e o repositorio nao deve ser chamado.
+        """
+        type(mock_perfil).ADM=PropertyMock(return_value=False)
+        id_alvo=2
+        with pytest.raises(exc.PermissionDeniedError):
+            operador.desativar_operador(id_alvo)
+            
+        mock_repo_operador.deletar.assert_not_called()
