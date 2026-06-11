@@ -86,3 +86,49 @@ class Operador:
                  raise
               
           raise exc.PermissionDeniedError("somente ADM pode desativar operadores") 
+          
+          
+    def pesquisar_nome(self, nome):
+        """
+        Busca operadores que tenham um nome similar ao fornecido.
+        Filtra os resultados de duas formas: 
+            se quem executa for ADM retorna todos campos exceto : senha.
+            se quem executa nao for ADM retorna: email, nome, ativo, ADM.
+         Faz o registro de auditoria
+        
+        
+        Args:
+            nome(str): nome completo ou parcial do operador.
+            
+        Returns:
+            list[dict]: lista de dicionarios que contem dados dos operadores.
+            
+        Raises:
+            EntityNotFoundError: lançado pelo repositorio se nao houver operdores que correspondam ao nome.
+        """
+        operador_id= self._perfil.id
+        dados_prontos= list() #para acumular operadores.
+        
+        #busca operadores
+        logger.debug("buscando operadores com nome similar a %s", nome)  
+        dados= self._repo_operador.buscar_nome(nome)
+        
+        #verifica se é ADM e define filtros
+        logger.debug("definindo filtros")
+        if self._perfil.ADM:
+            filtro=["senha"]
+            logger.debug("definido: filtro ADM")
+        else:
+            filtro=["identificacao", "senha", "telefone", "endereco"]
+            logger.debug("definido: filtro comum ")   
+        
+        #filtra os dados e adiciona a dados prontos.
+        for operador in dados:
+            dados_prontos.append(self.filtrar_dados(operador, filtro))
+            
+        #registra auditoria     
+        auditoria.auditar(
+                    operador_id,
+                    operacao="pesquisar_nome",
+                    detalhes=f"pesquisou pelo operador com  nome parecido a :{nome}, resultados: {len(dados_prontos)} ")
+        return dados_prontos
