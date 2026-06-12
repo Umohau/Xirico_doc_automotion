@@ -1,7 +1,34 @@
 import exc
+import os
+import logging
+from dotenv import load_dotenv
 
 
-class Operador:
+#pega o nivel do logging
+load_dotenv("config.env")
+log_level_str= os.getenv("LOG_LEVEL", "DEBUG")
+log_level= getattr(logging, log_level_str)
+
+
+#configura o logging
+logger= logging.getLogger(__name__)
+logging.basicConfig(
+    format= "%(levelname)s: %(name)s: %(message)s: %(asctime)s",
+    datefmt="%H:%M",
+    level= log_level
+)
+
+
+class FiltroMixIn:
+    def filtrar_dados(self,dados, filtros):
+        dados_filtrados=dict()
+        logger.debug("filtrando dados")
+        for campo, valor in dados.items():
+            if campo not in filtros:
+                dados_filtrados[campo]= valor
+        return dados_filtrados
+        
+class Operador(FiltroMixIn):
     def __init__(self, repo_operador, autenticador, auditoria, perfil):
         self._repo_operador= repo_operador
         self._autenticador= autenticador
@@ -127,7 +154,7 @@ class Operador:
             dados_prontos.append(self.filtrar_dados(operador, filtro))
             
         #registra auditoria     
-        auditoria.auditar(
+        self._auditoria.auditar(
                     operador_id,
                     operacao="pesquisar_nome",
                     detalhes=f"pesquisou pelo operador com  nome parecido a :{nome}, resultados: {len(dados_prontos)} ")
