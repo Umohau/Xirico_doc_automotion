@@ -30,8 +30,17 @@ class Test_Operador:
     @pytest.fixture
     def mock_repo_operador(self):
         mock=Mock()
+        
+        #dados usados como retorno dos metodos que precisam retornar dados.
+        
+               
+        #configura o metodo de unividade para retornar True
         mock.verificar_unicidade.return_value=True
+        
+        #configura o metodo inserir para retornar 1 como novo id inserido
         mock.inserir.return_value=1
+        
+        #configura o metodo pesquisar_nome para retornr dados_brutos
         return mock
         
     @pytest.fixture
@@ -218,3 +227,89 @@ class Test_Operador:
             operador.desativar_operador(id_alvo)
             
         mock_repo_operador.deletar.assert_not_called()
+        
+        
+    @pytest.mark.positive
+    def test_pesquisar_nome_com_perfil_ADM(self, operador, mock_repo_operador):
+        """
+        given:
+            um objeto operador que possua o metodo pesquisar_nome.
+            
+        when:
+            o metodo pesquisar_nome é chamado por um perfil administrador.
+            
+        then:
+            os dados retornados devem ter a chave 'senha' removida.
+        """
+        dados_brutos=[{'nome': 'umohau',
+               'identificacao': '83689772925',
+               'telefone': '852703882',
+               'email': 'muhauhara3@gmail.com',
+               'endereco': 'moamba, matadouro',
+               'senha':'muhau333',
+               'ADM':False,
+               'ativo':True}]
+
+        dados_filtrados= {'nome': 'umohau', 'identificacao': '83689772925', 'telefone': '852703882', 'email': 'muhauhara3@gmail.com', 'endereco': 'moamba, matadouro',
+'ADM':False, 'ativo':True}
+
+        mock_repo_operador.buscar_nome.return_value= dados_brutos
+        #executa a busca
+        nome="umohau"
+        a=operador.pesquisar_nome(nome)
+        
+        #verifica se o campo senha foi removido
+        assert a[0]== dados_filtrados
+
+ 
+    @pytest.mark.positive
+    def test_pesquisar_nome_com_pefil_n_ADM(self, operador, mock_repo_operador, mock_perfil):
+        
+        """
+        given:
+            um objeto operador que possua o metodo pesquisar_nome.
+            
+        when:
+            o metodo pesquisar_nome é chamado por um perfil nao administrador.
+            
+        then:
+            os dados retornados devem conter apenas as  chaves [nome, email, ADM, ativo]
+        """
+        dados_brutos=[{'nome': 'umohau',
+               'identificacao': '83689772925',
+               'telefone': '852703882',
+               'email': 'muhauhara3@gmail.com',
+               'endereco': 'moamba, matadouro',
+               'senha':'muhau333',
+               'ADM':False,
+               'ativo':True}]
+
+        dados_filtrados= {'nome': 'umohau', 'email': 'muhauhara3@gmail.com', 
+'ADM':False, 'ativo':True}
+        nome="umohau"
+
+        mock_repo_operador.buscar_nome.return_value=dados_brutos
+        type(mock_perfil).ADM=PropertyMock(return_value=False)
+        
+        a=operador.pesquisar_nome(nome)
+        assert dados_filtrados==a[0]
+        
+        
+    @pytest.mark.negative
+    def test_pesquisar_nome_nao_encontrado(self, operador, mock_repo_operador, mock_perfil):
+        """
+        given:
+            um objeto operador com o metodo pesquisar_nome.
+            
+        when:
+            quando o metodo pesquisar_nome é chamado, mas nao encontra correspondencia parcial ou total do nome firnecido no repositorio.
+            
+        then:
+            o metodo deve ser lancada a excecao EntityNotFoundError.
+        """
+        nome="umohau"
+        mock_repo_operador.buscar_nome.side_effect= exc.EntityNotFoundError("nenhuma correspondencia para: {nome}")
+        
+        with pytest.raises(exc.EntityNotFoundError):
+            operador.pesquisar_nome(nome)
+        
