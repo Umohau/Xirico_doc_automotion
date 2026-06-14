@@ -229,7 +229,7 @@ class Test_Operador:
         mock_repo_operador.deletar.assert_not_called()
         
         
-    @pytest.mark.positive
+    @pytest.mark.search
     def test_pesquisar_nome_com_perfil_ADM(self, operador, mock_repo_operador):
         """
         given:
@@ -262,7 +262,7 @@ class Test_Operador:
         assert a[0]== dados_filtrados
 
  
-    @pytest.mark.positive
+    @pytest.mark.search
     def test_pesquisar_nome_com_pefil_n_ADM(self, operador, mock_repo_operador, mock_perfil):
         
         """
@@ -295,7 +295,7 @@ class Test_Operador:
         assert dados_filtrados==a[0]
         
         
-    @pytest.mark.negative
+    @pytest.mark.search
     def test_pesquisar_nome_nao_encontrado(self, operador, mock_repo_operador, mock_perfil):
         """
         given:
@@ -312,4 +312,62 @@ class Test_Operador:
         
         with pytest.raises(exc.EntityNotFoundError):
             operador.pesquisar_nome(nome)
+
         
+    @pytest.mark.search
+    def test_pesquisar_id(self, operador, mock_repo_operador):
+        """
+        given:
+            um objeto operador com o metodo pesquisar_id.
+            
+        when:
+            o metodo pesquisar_id é chamado com um id que está no repositorio por um perfil ADM.
+            
+        then:
+            o metodo buscar_id do repositorio deve ser chamado.
+            os dados retornados devem ter o campo senha removido.
+        """
+        mock_repo_operador.buscar_id.return_value={"nome":"umohau", "senha":3333}
+        esperado={"nome":"umohau"}
+        a=operador.pesquisar_id(1)
+        mock_repo_operador.buscar_id.assert_called()      
+        assert a== esperado
+                            
+                            
+    @pytest.mark.search
+    def test_pesquisar_id_perfil_nao_ADM(self, operador, mock_perfil, mock_repo_operador):
+        """
+        given:
+            um objeto operador com o metodo pesquisar_id.
+            
+        when:
+            pesquisar_id  é chamado por um petfil nao ADM.
+            
+        then:
+            deve lancar a excecao PermissionDeniedError e nao chamar o repositorio.
+        """
+        type(mock_perfil).ADM=PropertyMock(return_value=False)
+        with pytest.raises(exc.PermissionDeniedError):
+            operador.pesquisar_id(1)
+        
+        mock_repo_operador.buscar_id.assert_not_called()
+                       
+                                                                                   
+    @pytest.mark.search
+    def test_pesquisar_id_alvo_nao_encontrado(self, operador, mock_repo_operador):
+        """
+        given:
+            um objeto operador com o metodo pesquisar_id.
+            
+        when:
+            pesquisar_id é chamado com um id que existe no repositorio (o repositorio nao encontra o alvo).
+            
+        then:
+            deve levantar a excecao EntityNotFoundError
+        """                                      
+        mock_repo_operador.buscar_id.side_effect= exc.EntityNotFoundError
+        
+        with pytest.raises(exc.EntityNotFoundError):
+            operador.pesquisar_id(1)    
+            
+  
