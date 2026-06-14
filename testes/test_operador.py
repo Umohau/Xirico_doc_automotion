@@ -370,4 +370,60 @@ class Test_Operador:
         with pytest.raises(exc.EntityNotFoundError):
             operador.pesquisar_id(1)    
             
-  
+                                                                           
+    @pytest.mark.update
+    def test_actualizar_identificacao(self, operador, mock_autenticador,mock_repo_operador, mock_auditoria):
+        """
+        given:
+            um objeto operador com o metodo actualizar_endereco.
+            
+        when:
+            o metodo actualizar_identificacao é chamado por ADM, com um otp valido.
+            
+        then:
+            o otp deve ser chamado com o codigo firnecido.
+            o metodo actualizar do repsitorio deve ser chamado com o id e o dicionario com a identificacao, e  a operacao registrada .
+        """
+        ident="23557767733"
+        cod="0000"
+        
+        #executa o  metodo
+        operador.actualizar_identificacao(1, cod, ident)
+        #verifica se o.otp foi verificado
+        mock_autenticador.verificar_otp.assert_called_with(cod)
+        #espera que o repositorio seja chamado
+        mock_repo_operador.actualizar.assert_called_with(1, {"identificacao": ident})
+        mock_auditoria.auditar.assert_called() #accao foi registrada
+        
+
+    @pytest.mark.update
+    def test_actualizar_identificacao_otp_invalido(  self, operador, mock_autenticador, mock_repo_operador ):
+        """
+        given:
+            objeto operador que tenha o metodo actualizar_iddntigicacao.
+            
+        when:
+            o metodo é chamado com o otp invalido(errado).
+            
+        then:
+            deve ser levantada a excecao InvalidOtpError e o repositorio nao deve ser chamado.
+        """
+        ident="23557767733"
+        cod="1110"
+        #configura verificar otp para lacar a excecao InvalidOtpError.
+        mock_autenticador.verificar_otp.side_effect=exc.InvalidOtpError
+        
+        with pytest.raises(exc.InvalidOtpError):
+            operador.actualizar_identificacao(1, cod, ident)
+        mock_repo_operador.assert_not_called()
+        
+        
+    @pytest.mark.update
+    def test_actualizar_identificacao_perfil_n_ADM(self, operador, mock_perfil):
+        ident="23557767733"
+        cod="1110"
+        #configura o atributo ADM do perfil para retornar False
+        type(mock_perfil).ADM=PropertyMock(return_value=False)
+        
+        with pytest.raises(exc.PermissionDeniedError):
+             operador.actualizar_identificacao(1, cod, ident)
