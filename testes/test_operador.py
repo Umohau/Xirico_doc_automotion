@@ -420,6 +420,16 @@ class Test_Operador:
         
     @pytest.mark.update
     def test_actualizar_identificacao_perfil_n_ADM(self, operador, mock_perfil):
+        """
+        given:
+            objeto operado com metodo actualizar.
+            
+        when:
+            o metodo é chamado por um perfil nao administrador.
+            
+        then:
+            devd ser levantada a excecao PermissionDeniedError.
+        """
         ident="23557767733"
         cod="1110"
         #configura o atributo ADM do perfil para retornar False
@@ -427,3 +437,95 @@ class Test_Operador:
         
         with pytest.raises(exc.PermissionDeniedError):
              operador.actualizar_identificacao(1, cod, ident)
+             
+             
+    @pytest.mark.update
+    def test_actualizar_endereco(self, operador, mock_autenticador, mock_repo_operador, mock_auditoria):
+        """
+        given:
+            objeto operador com metodo actualizar_endereco.
+            
+        when:
+            o metodo é chamado por um perfil ADM, com um id alvo existente e um otp valido.
+            
+        then:
+            devem ser chamados: o autenticador, o repositorio. e a accao registrada em auditoria.
+        """
+        endereco="moamba"
+        cod="0000"
+        alvo=1
+        
+        operador.actualizar_endereco(alvo, endereco, cod)
+        
+        #verifica as chamadas 
+        mock_autenticador.verificar_otp.assert_called_with(cod)
+        mock_repo_operador.actualizar.assert_called()
+        mock_auditoria.auditar.assert_called()
+        
+        
+    @pytest.mark.update
+    def test_actualizar_endereco_perfil_n_ADM(self, operador, mock_perfil, mock_repo_operador):
+        """
+        given:
+            objeto operador com metodo actualizar_endereco.
+            
+        when:
+            actualizar_endereco é chamado por um perfil nao ADM.
+            
+        then:
+            deve ser lançada a excecao PermissionDeniedError e o repositorio nao chamado.
+        """
+        endereco="moamba"
+        cod="0000"
+        alvo=1
+        type(mock_perfil).ADM=PropertyMock(return_value=False)
+        
+        with pytest.raises(exc.PermissionDeniedError):
+            operador.actualizar_endereco(alvo, endereco, cod)
+        mock_repo_operador.actualizar.assert_not_called()
+        
+        
+    @pytest.mark.update
+    def test_actualizar_endereco_otp_invalido(self, operador, mock_autenticador, mock_repo_operador):
+         """
+         given:
+             objeto operador com metodo actualizar_endereco.
+             
+         when:
+             actualizar_endereco é chamado com um otp invalido(errado).
+             
+         then:
+             deve ser levantada a excecao InvalidOtpError e o repositorio nao chamado.
+         """
+         endereco="moamba"
+         cod="0300"
+         alvo=1
+         mock_autenticador.verificar_otp.side_effect=exc.InvalidOtpError
+        
+         with pytest.raises(exc.InvalidOtpError):
+            operador.actualizar_endereco(alvo, endereco, cod)
+         mock_repo_operador.actualizar.assert_not_called()            
+
+            
+    @pytest.mark.update
+    def test_actualizar_endereco_alvo_nao_encontrado(self, operador, mock_repo_operador):
+        """
+        given:
+            objeto operador com o metodo actualizar_endereco.
+            
+        when:
+            actualizar_endereco é chamado para um id alvo nao existente(nao encontrado).
+            
+        then:
+            deve ser levantada a excecao EntityNotFoundError.
+        """
+        endereco="moamba"
+        cod="0300"
+        alvo=2
+        mock_repo_operador.actualizar.side_effect=exc.EntityNotFoundError
+        
+        with pytest.raises(exc.EntityNotFoundError):
+              operador.actualizar_endereco(alvo, endereco, cod)
+              
+              
+    
