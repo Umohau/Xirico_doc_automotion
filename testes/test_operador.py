@@ -228,6 +228,51 @@ class Test_Operador:
             
         mock_repo_operador.deletar.assert_not_called()
         
+
+    @pytest.mark.status
+    def test_reactivar_operador(self, operador, mock_autenticador, mock_repo_operador):
+        email="exemplo@gmail.com"
+        cod="0000"
+        dados={"id":1, "email": "exemplo@gmail.com"}
+        mock_repo_operador.buscar_inativo.return_value= dados
+        #executa  o metodo reativar
+        operador.reactivar_operador(email, cod)
+        mock_autenticador.verificar_otp.assert_called_with(cod)
+        mock_repo_operador.buscar_inativo.assert_called()
+        mock_repo_operador.reactivar.assert_called()
+
+
+    @pytest.mark.status
+    def test_reactivar_operador_perfil_nao_ADM(self, operador, mock_perfil, mock_repo_operador):
+        email="exemplo@gmail.com"
+        cod="0000"
+        type(mock_perfil).ADM=PropertyMock(return_value=False)
+        
+ 
+        with pytest.raises(exc.PermissionDeniedError):
+            operador.reactivar_operador(email, cod)
+        mock_repo_operador.buscar_inativo.assert_not_called()          
+        
+        
+    @pytest.mark.status
+    def test_reactivar_operador_otp_invalido(self, operador, mock_autenticador):
+        email="exemplo@gmail.com"
+        cod="4400"
+        mock_autenticador.verificar_otp.side_effect= exc.InvalidOtpError
+        with pytest.raises(exc.InvalidOtpError):
+            operador.reactivar_operador(email, cod)
+       
+
+    @pytest.mark.status
+    def test_reactivar_operador_alvo_nao_encontrado(self, operador, mock_repo_operador):
+        email="exemplo@gmail.com"
+        cod="4400"
+        mock_repo_operador.buscar_inativo.side_effect=exc.EntityNotFoundError
+        
+        with pytest.raises(exc.EntityNotFoundError):
+            operador.reactivar_operador(email,  cod)
+        mock_repo_operador.reactivar.assert_not_called()
+        
         
     @pytest.mark.search
     def test_pesquisar_nome_com_perfil_ADM(self, operador, mock_repo_operador):
@@ -528,4 +573,3 @@ class Test_Operador:
               operador.actualizar_endereco(alvo, endereco, cod)
               
               
-    
