@@ -79,7 +79,52 @@ class Operador(FiltroMixIn):
                     
             raise exc.PermissionDeniedError("somente ADM pode adicionar novos operadores") 
             
+    def actualizar_identificacao(self, id_alvo,codigo, ident:str) -> None:
+        """
+        Actualiza a identifucacao do operador alvo, só pode ser executdo por um adm e concluida apos verificao com otp do operador alvo para confirmar.
+        
+        Args:
+            id_alvo(int): id do operador alvo da actulizacao.
+            codigo(int): codigo otp enviado ao operador alvo para confirmacao.
+            ident(str): nova identificao do operador.
             
+        Returns:
+            None
+            
+        Raises:
+            EntityNotFoundError: se o operador alvo nao for encontrado.
+            InvalidOtpError: se o codigo otp estiver errado.
+            ExpiredOtpError: se o otp tiver expirado.
+        """
+        operador_id=self._perfil.id
+        
+          #verifica se e ADM
+        if not self._perfil.ADM:
+            raise exc.PermissionDeniedError("apenas adm pode executar esta accao")
+        if self._autenticador.verificar_otp(codigo):
+            dado={"identificacao":ident}
+            logger.debug("actualizando identificacao")
+            self._repo_operador.actualizar(id_alvo, dado)
+            self._auditoria.auditar(
+                operador_id,
+                operacao="actualizar_identificacao",
+                detalhes=f"actualizou a identificacao do operador id: {id_alvo}")
+                
+                
+    def actualizar_endereco(self, id_alvo, endereco, codigo):
+        operador_id=self._perfil.id
+        
+        #verifica se e ADM
+        if not self._perfil.ADM:
+            raise exc.PermissionDeniedError("apenas adm pode executar esta accao")
+        if self._autenticador.verificar_otp(codigo):
+            dado={"endereco":endereco}
+            logger.debug("actualizando endereco")
+            self._repo_operador.actualizar(id_alvo, dado)
+            self._auditoria.auditar(
+                operador_id,
+                operacao="actualizar_endereço",
+                detalhes=f"actualizou o endereço do operador id: {id_alvo}")                                                                                   
     def desativar_operador(self, id_alvo:int) -> None:
           """
           Faz um sof delete do operador alvo (desativa).Somente operadores ADM podem eliminar operadores, registra a operacao em logs de auditoria.
@@ -113,8 +158,56 @@ class Operador(FiltroMixIn):
                  raise
               
           raise exc.PermissionDeniedError("somente ADM pode desativar operadores") 
+
+
+    def reactivar_operador(self, email,codigo):
+        if not self._perfil.ADM:
+            logger.warning("falha: tentativa de reactivar um operador. permissao negada." )
+            raise exc.PermissionDeniedError("somente ADM pode reactivar operadores")
+        logger.debug("localizando operador")
+        operador=self._repo_operador.buscar_inativo(email)
+        id_alvo=operador.get("id")
+        campo={"ativo": True}
+        logger.debug("sucesso: operador localizado")
+        if self._autenticador.verificar_otp(codigo):
+            logger.debug("reactivando operador")
+            self._repo_operador.reactivar(id_alvo)
+            logger.info("sucesso: operador id: %d reactivado", id_alvo)
+    
+       
+    def promover_operador(self, id_alvo):
+        operador_id=self._perfil.id
+        logger.debug("promovendo operador id: %d", id_alvo)
+        if not self._perfil.ADM:
+            logger.warning("falha ao promover operador. permissao negada")
+            raise exc.PermissionDeniedError("apenas adm pode promover operadores")
+
+        campo={"ADM": True}
+        self._repo_operador.actualizar(id_alvo, campo)
+        self._auditoria.auditar(
+                operador_id,
+                operacao="promover_operador",
+                detalhes=f"promoveu o operador id: {id_alvo} a ADM") 
+        logger.info("operador id: %d promovido a ADM", id_alvo)          
           
           
+    def rebaixar_operador(self, id_alvo):
+        operador_id= self._perfil.id
+        logger.debug("rebaixando operador id: %d", id_alvo)
+        if not self._perfil.ADM:
+            logger.warning("falha ao rebaixar operador, permissao negada.")
+            raise exc.PermissionDeniedError("apenas adm pode rebaixar operadores")
+
+        campo={"ADM": False}
+        self._repo_operador.actualizar(id_alvo, campo)
+        
+        self._auditoria.auditar(
+                operador_id,
+                operacao="rebaixar_operador",
+                detalhes=f"rebaixou o operador id: {id_alvo} a operador comum") 
+        logger.info("operador id: %d rebaixado a operador comum", id_alvo)
+    
+    
     def pesquisar_nome(self, nome):
         """
         Busca operadores que tenham um nome similar ao fornecido.
@@ -159,3 +252,50 @@ class Operador(FiltroMixIn):
                     operacao="pesquisar_nome",
                     detalhes=f"pesquisou pelo operador com  nome parecido a :{nome}, resultados: {len(dados_prontos)} ")
         return dados_prontos
+        
+        
+    def pesquisar_id(self, id:int) -> dict:
+        """
+        Busca operador do id fornecido.
+        Filtra o resultado e omite a senha .
+        Faz o registro de auditoria
+        
+        
+        Args:
+            id(int): id do operador alvo.
+            
+        Returns:
+            dict:  dicionario com os dados do operador
+            
+        Raises:
+            EntityNotFoundError: lançado pelo repositorio se nao encontrar o operdor do id fornecido.
+            PermissionDeniedError: se o quem executa nao for ADM
+        """
+        operador_id= self._perfil.id
+        filtro=["senha"]
+        
+        # verifica permissao e busca operador
+        if not self._perfil.ADM:
+            raise exc.PermissionDeniedError("operacao restrita. busca exclusiva a ADMs.")
+        logger.debug("buscando operador com  id: %d", id)  
+        dados= self._repo_operador.buscar_id(id)
+        
+        #registra auditoria     
+        self._auditoria.auditar(
+                    operador_id,
+                    operacao="pesquisar_id",
+                    detalhes=f"pesquisou pelo operador com id:{id}")
+                    
+        return self.filtrar_dados(dados, filtro)
+        
+    @property
+    def listar_operadores(self):
+        """
+        busca todos os operadores e filtra os dados removendo os campos ["identificacao", "senha", "telefone", "endereco"].
+        """
+        filtro=["identificacao", "senha", "telefone", "endereco"]
+        operadores=self._repo_operador.buscar_tudo()
+        return [self.filtrar_dados(operador) for operador in operadores]
+        
+        
+    
