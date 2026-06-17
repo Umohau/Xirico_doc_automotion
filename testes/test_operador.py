@@ -573,3 +573,73 @@ class Test_Operador:
               operador.actualizar_endereco(alvo, endereco, cod)
               
               
+    @pytest.mark.role
+    def test_promover_operador(self, operador, mock_repo_operador, mock_auditoria ):
+        """
+        given:
+            objeto operador com metodo promover_operador.
+            
+        when:
+            promover_operador é chamado por um perfil ADM para um id existente.
+            
+        then:
+            deve ser chamado o metodo actualizar do repositorio, e accao registrada.
+        """
+        operador.promover_operador(1)
+        mock_repo_operador.actualizar.assert_called()
+        mock_auditoria.auditar.assert_called()
+        
+        
+    @pytest.mark.role
+    def test_promover_operador_perfil_nao_ADM(self, operador, mock_perfil, mock_repo_operador):
+        """
+        given:
+            objeto operador com metodo promover_operador.
+            
+        when:
+            promover_operador é chamado por um perfil  nao ADM.
+            
+        then:
+            deve ser lancada a excecao PermissionDeniedError, e o actualizar do repositorio nao chamado.
+        """
+        type(mock_perfil).ADM=PropertyMock(return_value=False)
+        
+        with pytest.raises(exc.PermissionDeniedError):
+            operador.promover_operador(2)
+        mock_repo_operador.actualizar.assert_not_called()
+        
+        
+    @pytest.mark.role
+    def test_rebaixar_operador( self, operador, mock_repo_operador, mock_auditoria) :
+        """
+        given:
+            objeto operador com metodo rebaixar _operador.
+            
+        when:
+            rebaixar_operador é chamado por um perfil ADM para um id existente.
+            
+        then:
+            deve ser chamado o metodo actualizar do repositorio, e accao registrada.
+        """
+        operador.rebaixar_operador(1)
+        mock_repo_operador.actualizar.assert_called()
+        mock_auditoria.auditar.assert_called()
+        
+     
+    @pytest.mark.role           
+    def test_rebaixar_operador_perfil_nao_ADM(self, operador, mock_perfil, mock_repo_operador):
+        """
+        given:
+            objeto operador com metodo rebaixar_operador.
+            
+        when:
+            rebaixar_operador é chamado por um perfil  nao ADM.
+            
+        then:
+            deve ser lancada a excecao PermissionDeniedError, e o actualizar do repositorio nao chamado.
+        """
+        type(mock_perfil).ADM=PropertyMock(return_value=False)
+        
+        with pytest.raises(exc.PermissionDeniedError):
+            operador.rebaixar_operador(2)
+        mock_repo_operador.actualizar.assert_not_called()
