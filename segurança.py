@@ -7,53 +7,31 @@ import secrets
 import keyring
 import yagmail
 import time
+from dotenv import load_dotenv
 from random import randint
 from pathlib import Path
 from keyrings.alt.file import PlaintextKeyring #para testes em desenvolvimento
 from datetime import datetime, timezone, timedelta
-from infra import AttemptsExcedError, InvalidOtpError
+from exc import AttemptsExcedError, InvalidOtpError
 
-SENHA_FA="fyvb clyn fnvm ezbw"
-CONTA_FA="exemplo@gmail.com"
-SERVICO="programa__xirico"
-KEY="chave_jwt"
-AGORA=datetime.now(timezone.utc)
-IAT= int(AGORA.timestamp())
-EXP=int((AGORA+ timedelta(hours=1)).timestamp())
+load_dotenv("config.env") #carrega o env com as definicoes
 
+#configura o logging
+log_level_str=os.getenv(LOG_LEVEL)
+log_level=sys.getattr(logging, log_level_str)
 logger= logging.getLogger(__name__)
 logging.basicConfig(
-    format= "%(levelname)s: %(name)s: %(message)s: %(asctime)s",
+    format= "[%(levelname)s]: [%(name)s]: %(message)s: [%(asctime)s]",
     datefmt="%H:%M",
-    level= logging.DEBUG
+    level= log_level 
     )
-keyring.set_keyring(PlaintextKeyring()) # para testes durante desenvolvimento
+
+if os.getenv("ENV") == "devolopment":
+    keyring.set_keyring(PlaintextKeyring()) # para testes durante desenvolvimento
 
 
-class PermissaoMixIn:
-    @staticmethod 
-    def permissao(operador):
-        """
-        Verifica se o operdor logado é Administrador ou nao.
-        Params:
-            operador: operador a ser verificado 
-            
-        Returns:
-            True: se o operador for ADM
-            False: se nao for ADM
-        
-        Raises:
-            InvalidTokenError: se o token for invalido 
-        """
-        logger.debug("checando permissao")
-        perm= operador.get("ADM", False)
-        if perm:
-            logger.debug("pernissao Válida")
-            return perm
-        logger.warning("permissao negada")
-        return perm
-        
-class SegSenha:
+
+class SenhaMixIn:
     @staticmethod
     def hashear(senha: str) -> bytes:
         """
@@ -63,7 +41,7 @@ class SegSenha:
             senha(str): senha a ser hasheada.
             
         Returns:
-            bytes: retorna a senha hasheada e com salt em byte.
+            bytes: retorna a senha hasheada e com salt em bytes.
         """
         pin= senha.encode("utf-8")
         senha_hasheada= bcrypt.hashpw(pin, bcrypt.gensalt())
@@ -105,7 +83,18 @@ class Auditoria:
         return Path(__file__).parent
         
         
-    def auditar(self, operador, operacao, detalhes=''):
+    def auditar(self, operador:int, operacao:str, detalhes='') -> None:
+        """
+        Registra a operacao em logs com o id do operador a accao executada os detalhes da operacao e o timestamp em um arquivo jsonlines.
+        
+        Args:
+            operador(int): id do operador que executa a operacao registrada.
+            operacao(str): nome da operacao que foi executada.
+            detalhes(str): detalhes da operacao executada.
+            
+        Returns:
+            None    
+        """
         dados= {
             "operador_id":operador,
             "operacao": operacao,
@@ -124,6 +113,15 @@ class Auditoria:
         
                 
     def historico_hoje(self, operador_id):
+        """
+        Pega o historico da actual(hoje) de um operador escificado pelo id.
+        
+        Args:
+            operador_id(int): id do operador alvo.
+            
+        Returns:
+            list[dict]: lista de dicionarios com os dados de cada operacao
+        """
         historico=list()
         with open(self._arquivo, "r", encoding="utf-8") as arquivo:
                 for linha in arquivo:
@@ -135,6 +133,17 @@ class Auditoria:
         
 
     def historico_diario(self, operador_id,data:str ) -> list[dict] :
+        """
+        Pega o historico de um operador numa data fornecida.
+        
+        Args:
+            operador_id(int): id do operador alvo.
+            data(str): data  da qual se pretende o historico.
+            
+        Returns:
+            list[dic]: lista de dicionarios com os dados das operacoes do operador na data especificada.
+            Retorna lista vazia se nao tiver operacoes do operador.
+        """
         historico=list()
         ficheiro= self._base/"aud"/f"registro_{data}.jsonl"
         
@@ -142,22 +151,31 @@ class Auditoria:
             for linha in arquivo:
                 if linha.strip():
                     registro= json.loads(linha)
-                    historico.append(registro)
+                    if registro.get("operador_id")==operador_id
+                        historico.append(registro)
         return historico
 
 
-class OTP:
+class OtpMixIn:
     def __init__(self):
         self._otp= None
         self.__tentativas=0
              
     def gerar_otp(self):
+        """
+        Gera um otp de 8 digitos válido por 5 minutos,  armazena o hash do codigo na instancia.
+        
+        Returns:
+            str: codigo de 8 digitos gerado
+        """
         logger.debug("gerando otp")
         self.__tentativas=0
-        codigo=randint(1000000, 9999999)
+        codigo= "".join(secrets.choice("1234567890") for _ in range(8))
+        otp=bcrypt.hashpw(codigo.encode("utf-8"), bcrypt.gensalt())
         exp=time.time() +300
-        self._otp={"otp":codigo, "exp":exp}
-        logger.debug('secesso: otp gerado')
+        self._otp={"otp":otp, "exp":exp}
+        logger.debug('sucesso: otp gerado')
+        return codigo
         
         
     @property
@@ -168,34 +186,71 @@ class OTP:
             
             elif time.time() < self._otp.get("exp"):
                 return "pending"
-        raise RuntimeError("deve primeiro gerar um otp")
+        return "No OTP"
         
 
-    def verificar_otp(self, codigo: int) -> bool:
+    def verificar_otp(self, codigo: str) -> bool:
+        """
+        Verifica se o otp fornecido pelo isuario é valido.
+        
+        Args:
+            codigo(str): otp fornecido pelo usuario.
+            
+        Returns:
+            True se o otp for valido(estiver correto).
+            
+        Raises:
+            ExpiredOtpError: se o otp estiver fora de validade(prazo de 5 minutos).
+            AttemptExcedError: se excerder o limite de tentativas(3 tentativas).
+            InvalidOtpError: se o otp estiver errado.
+        """
         logger.debug("verificando otp")
         if self.status_ == "expired":
              logger.debug("otp invalido")
              raise ExpiredOtpError("codigo de validacao expirdo")
-        if self._otp.get("otp")== codigo:
+             
+        compativel= bcrypt.checkpw(codigo.encode("utf-8"), self._otp.get("otp"))
+        if compativel:
              self.__tentativas=0
+             self._otp=None
              logger.debug("otp valido")
-             return True
+             return compativel
         else:
             logger.debug("codigo otp errado")
             self.__tentativas+=1
-            if self.__tentativas >3:
+            if self.__tentativas >=3:
                 self._otp=None
                 raise AttemptsExcedError("limite de tentativas excedidas")
             raise InvalidOtpError("otp invalido verifique-o. ")
             
+            
     def enviar_codigo(self, destino:str) -> None:
+        """    
+        Envia o código OTP (One-Time Password) gerado para o e-mail do destinatário.
+
+    O método recupera as credenciais do remetente (e-mail e senha de aplicativo)
+    a partir das variáveis de ambiente. Caso as credenciais estejam ausentes,
+    uma exceção é lançada. O e-mail é enviado via SMTP utilizando a biblioteca
+    yagmail, contendo o OTP armazenado previamente no atributo `self._otp`.
+
+    Args:
+        destino (str): Endereço de e-mail do destinatário que receberá o código.
+
+    Raises:
+        CredentialsError: Se as variáveis de ambiente `EMAIL` ou `SENHA_EMAIL`
+            não estiverem definidas ou estiverem vazias.
+            """
+        conta=os.getenv("EMAIL")
+        senha_app=os.getenv("SENHA_EMAIL")
+        if not conta or not senha_app:
+            logger.critical("falha ao obter credenciais para envio de email")
+            raise CredentialsError("credenciais de email imcopletas")
         logger.debug("enviando otp por email")
-        print(f"{self._otp.get('otp')}")
         titulo="Codigo de verificacao"
         corpo=f"{self._otp.get('otp')} é o seu codigo da xirico\n A xirico recomenda nao compartilhar este codigo com terceiros."
-        yag=yagmail.SMTP(CONTA_FA, SENHA_FA)
-        #yag.send(destino, titulo, corpo)
-        logger.debug("secesso: otp enviado")
+        yag=yagmail.SMTP(conta, senha_app)
+        yag.send(destino, titulo, corpo)
+        logger.debug("sucesso: otp enviado")
                                                   
                 
 class Autenticacao(OTP):
