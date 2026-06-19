@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 #pega o nivel do logging
 load_dotenv("config.env")
-log_level_str= os.getenv("LOG_LEVEL")
+log_level_str= os.getenv("LOG_LEVEL", "DEBUG")
 log_level= getattr(logging, log_level_str)
 
 #configura o logging
@@ -18,37 +18,49 @@ logging.basicConfig(
 
 class Perfil:
     def __init__(self, sessao, repo_operador, autenticador, auditoria):
-        self._operador=sessao
+        self._id=sessao.id
         self._repo_operador=repo_operador
         self._autenticador= autenticador
         self._auditoria= auditoria
+        self._dados_cache=None
+        self._operador=self._obter_dados()
     @property
     def nome(self) ->str:
-        return self._operador["nome"]
+        return self._operador.get("nome")
 
 
     @property
     def id(self) -> int:
-        return self._operador["id"]
+        """
+        Obtem o id do operador logado.
+        """
+        return self._id
             
     @property
     def ADM(self) -> bool:
-        return self._operador["ADM"]
+        return self._operador.get("ADM")
         
 
     @property
     def email(self) -> str:
-        return self._operador["email"]
+        return self._operador.get("email")
         
         
     @property
     def telefone(self) -> str:
-        return self._operador["telefone"]
+        return self._operador.get("telefone")
 
 
     @property
     def estado(self) -> bool:
-        return self._operador["ativo"]
+        return self._operador.get("ativo")
+        
+
+
+    def _obter_dados(self):
+        if  self._dados_cache is None:
+            self._dados_cache= self._repo_operador.buscar_id(self.id)
+        return self._dados_cache
         
         
     def editar_nome(self, nome:str)->None:
@@ -64,6 +76,7 @@ class Perfil:
         dado={"nome": nome}
         logger.debug("editando nome")
         self._repo_operador.actualizar(self.id, dado)
+        self._dados_cache=None
         self._auditoria.auditar(
             self.id,
             "editar nome",
@@ -91,6 +104,7 @@ class Perfil:
         logger.debug("alterando email")
         if self._autenticador.verificar_otp(codigo):
             self._repo_operador.actualizar(self.id, dado)
+            self._dados_cache=None
             self._auditoria.auditar(
                 self.id,
                 "mudar_email",
@@ -118,6 +132,7 @@ class Perfil:
         logger.debug("actualizando numero telefonico")
         if self._autenticador.verificar_otp(codigo):
             self._repo_operador.actualizar(self.id, dado)
+            self._dados_cache=None
             self._auditoria.auditar(
                 self.id,
                 "trocar_telefone",
