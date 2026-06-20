@@ -188,20 +188,42 @@ class TestOtpMixIn:
         assert len(codigo) ==8
         
        
-    def test_verificar_oto(self, OtpMixIn):
+    def test_verificar_otp(self, OtpMixIn):
+        """
+        given:
+            objeto OtpMixIn com metodo verificar_otp.
+            
+        when:
+            verificar_otp é chamado com um otp valido(dentro do prazo e correto).
+            
+        then:
+            o retorno deve ser True.
+        """
         codigo=OtpMixIn.gerar_otp()
         assert  OtpMixIn.verificar_otp(codigo) is True
         
         
     def test_verificar_otp_expirado(self, OtpMixIn, mocker):
+        """
+        given:
+            objeto OtpMixIn com metodo verificar_otp.
+            
+        when:
+            verificar_otp é chamado com um otp expirado.
+            
+        then:
+            espera-se a excecao ExpiredOtpError.
+        """
+        #configura a property status_ para simular otp expirado
         type(OtpMixIn).status_=PropertyMock(return_value="expired")   
         
-        codigo=OtpMixIn.gerar_otp()
+        codigo=OtpMixIn.gerar_otp() 
         with pytest.raises(exc.ExpiredOtpError):
             OtpMixIn.verificar_otp(codigo)
             
     @pytest.mark.slow       
     def test_verificar_otp_invalido(self, OtpMixIn):
+        #configura a property status_ para simular otp valido(pendente)
         type(OtpMixIn).status_=PropertyMock(return_value="pending")   
         OtpMixIn.gerar_otp()
         codigo="12345678"
@@ -211,6 +233,16 @@ class TestOtpMixIn:
 
     @pytest.mark.slow
     def test_verificar_otp_limite_de_tentativas(self, OtpMixIn):
+        """
+        given:
+            objeto OtpMixIn com metodo verificar_otp.
+            
+        when:
+            verificar_otp , é chamado 3 vezes com um otp errado.
+            
+        then:
+            deve lançar AttemptsExcedError
+        """
         OtpMixIn.gerar_otp()
         codigo="12345678"
         with pytest.raises(exc.AttemptsExcedError):
@@ -221,6 +253,16 @@ class TestOtpMixIn:
                     continue
 
     def test_verificar_otp_oto_nao_gerado(self, OtpMixIn):
+        """
+        given:
+            objeto OtpMixIn com metodo verificar_otp.
+            
+        when:
+            verificar_otp é chamado sem ter sido gerado um otp antes.
+            
+        then:
+            deve ser lancada a excessao AttributeError.
+        """
         codigo="12345678"
         with pytest.raises(AttributeError):
             OtpMixIn.verificar_otp(codigo)
