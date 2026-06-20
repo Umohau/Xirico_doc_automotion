@@ -3,11 +3,11 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import json
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock,  PropertyMock
 import pytest
 from datetime import datetime
 import exc
-from segurança import SenhaMixIn, Auditoria
+from segurança import SenhaMixIn, Auditoria, OtpMixIn
 
 @pytest.mark.password
 class TestSenhaMixIn:
@@ -56,7 +56,7 @@ class TestAuditoria:
         return Auditoria()
         
         
-    def test_auditar(self, tmp_path):
+    def test_auditar(self, tmp_path, auditoria):
         """
         given:
             objeto auditoria que possua o metodo auditar.
@@ -67,7 +67,6 @@ class TestAuditoria:
         then:
             deve criar um arquivo jsonl e escrever os dados nele de auditoria nele. os dados escritos devem conter os dados esperados(definidos abixo na implementacao).
         """
-        auditoria=Auditoria() #instancia Auditoria
         auditoria._base=tmp_path #sob-escreve a base do arquivo para o mock nativo.
         
         auditoria.auditar(1,"eliminar", "eliminou2") #executa o metodo auditar
@@ -163,3 +162,65 @@ class TestAuditoria:
             auditoria.historico_diario(operador_id, self.data)
         arquivo=auditoria._base/"aud"/f"registro_{self.data}.jsonl"
         assert arquivo.exists()
+        
+        
+class TestOtpMixIn:
+    @pytest.fixture
+    def OtpMixIn(self):
+        return OtpMixIn()
+        
+    def test_gerar_otp(self, OtpMixIn):
+        """
+        given:
+            objeto OtpMjxIn com o metodo gerar_otp.
+            
+        where:
+            gerar_otp é chamado.
+            
+        then:
+            o o otp gerado deve conter 8 digitos, e o otp armazenado deve ser um hash do otp com pelo menos 60 bytes.
+        """
+        
+        codigo=OtpMixIn.gerar_otp()
+        otp=OtpMixIn._otp["otp"]#otp armazenado
+        assert len(otp) >=60
+        assert isinstance(otp, bytes)
+        assert len(codigo) ==8
+        
+       
+    def test_verificar_oto(self, OtpMixIn):
+        codigo=OtpMixIn.gerar_otp()
+        assert  OtpMixIn.verificar_otp(codigo) is True
+        
+        
+    def test_verificar_otp_expirado(self, OtpMixIn, mocker):
+        type(OtpMixIn).status_=PropertyMock(return_value="expired")   
+        
+        codigo=OtpMixIn.gerar_otp()
+        with pytest.raises(exc.ExpiredOtpError):
+            OtpMixIn.verificar_otp(codigo)
+            
+    @pytest.mark.slow       
+    def test_verificar_otp_invalido(self, OtpMixIn):
+        type(OtpMixIn).status_=PropertyMock(return_value="pending")   
+        OtpMixIn.gerar_otp()
+        codigo="12345678"
+        with pytest.raises(exc.InvalidOtpError):
+            OtpMixIn.verificar_otp(codigo)
+        
+
+    @pytest.mark.slow
+    def test_verificar_otp_limite_de_tentativas(self, OtpMixIn):
+        OtpMixIn.gerar_otp()
+        codigo="12345678"
+        with pytest.raises(exc.AttemptsExcedError):
+            for i in range(3):
+                try:
+                    OtpMixIn.verificar_otp(codigo)
+                except exc.InvalidOtpError:
+                    continue
+
+    def test_verificar_otp_oto_nao_gerado(self, OtpMixIn):
+        codigo="12345678"
+        with pytest.raises(AttributeError):
+            OtpMixIn.verificar_otp(codigo)
