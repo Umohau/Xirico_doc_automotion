@@ -1,10 +1,12 @@
 import sys
 import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import json
 from pathlib import Path
 from unittest.mock import Mock
 import pytest
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from datetime import datetime
+import exc
 from segurança import SenhaMixIn, Auditoria
 
 @pytest.mark.password
@@ -46,6 +48,14 @@ class TestSenhaMixIn:
         
         
 class TestAuditoria:
+    data=datetime.today().strftime("%d_%m_%Y")
+    
+    
+    @pytest.fixture
+    def auditoria(self):
+        return Auditoria()
+        
+        
     def test_auditar(self, tmp_path):
         """
         given:
@@ -77,3 +87,79 @@ class TestAuditoria:
                     break
                     
             assert dados_esperados.items() <= a.items() #verifica se dados_esperados esta contido em a(dados escritos no jsonl)
+            
+            
+    def test_historico_hoje(self, auditoria):
+        """
+        given:
+            objeto auditoria com metodo historico_hoje, um registro jsonl nomeiado com a data de hoje.
+            
+        when:
+            historico_hoje é chamado com um id do operador alvo existente.
+            
+        then:
+            o retorno de hustorico_hoje deve conter os dados_esperados(definidos na implementacao).
+        """
+        dados_esperados={
+            "operador_id":1,
+            "operacao": "eliminar",
+            "detalhes_operacao": "eliminou2"}
+        
+        dados=auditoria.historico_hoje(1)
+        assert dados_esperados.items() <= dados[0].items()#verifica se dados_esperados esta contido em dadod.
+        
+        
+    def test_historico_diario(self, auditoria):
+        """
+        given:
+            objeto historico com metodo historico_diario.
+            
+        when:
+            historico_diario é chamado com a data de um arquivo que existe, e um operador_id que possua regustro nesse arquivo.
+            
+        then:
+            o retorno deve ser do tipo list contendo dicionarios.
+        """
+        operador_id=1
+        a=auditoria.historico_diario(operador_id, self.data)
+        arquivo=auditoria._base/"aud"/f"registro_{self.data}.jsonl"
+        assert arquivo.exists()
+        assert isinstance(a, list)
+        assert isinstance(a[0], dict)
+        
+        
+    def test_historico_hoje_arquivo_nao_encontrado(self, auditoria):
+        """
+        given:
+            objeto auditar com metodo historico_diario.
+            
+        when:
+            hustorico_diario é chamado com a data de um arquivo que nao existe.
+            
+        then:
+            deve ser lenvatada a excecao FileNotFoundError.
+        """
+        data="20_13_2026"
+        operador_id=1
+        with pytest.raises(FileNotFoundError):
+            auditoria.historico_diario(operador_id, data)
+        arquivo=auditoria._base/"aud"/f"registro_{data}.jsonl"
+        assert not arquivo.exists()
+        
+        
+    def test_historico_hoje_sem_registros(self, auditoria):
+        """
+        given:
+            objeto auditar com o metodo historico_diario.
+            
+        when:
+            historico_diario é chamado com a data de um arquivo que existe, mas nao contem registros das actividades do operador do id fornecido.
+            
+        then:
+            deve ser lancada a excecao EntityNotFoundError.
+        """
+        operador_id=4
+        with pytest.raises(exc.EntityNotFoundError):
+            auditoria.historico_diario(operador_id, self.data)
+        arquivo=auditoria._base/"aud"/f"registro_{self.data}.jsonl"
+        assert arquivo.exists()
