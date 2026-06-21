@@ -356,4 +356,20 @@ class TestAutenticacao:
         
         mock_get.assert_called_once_with(servico, key)
         mock_set.assert_not_called()
+
+
+    def test_pegar_chave_jwt_CredentialsError(self,autenticador, monkeypatch):
+        """
+        given:
+            objeto autenticador com metodo _pegar_chave_jwt.
+            
+        when:
+            pegar_chave_jwt é chamado mas as credenciais no env estao incompletas.
+            
+        then:
+            deve ser lancada a excecao CredentialsError.
+        """
+        monkeypatch.delenv("SERVICO", raising=False) #simula falta da credencial SERVICO
         
+        with pytest.raises(exc.CredentialsError):
+            autenticador._pegar_chave_jwt()
