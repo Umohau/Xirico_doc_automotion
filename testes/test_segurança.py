@@ -2,6 +2,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import json
+import jwt
 from pathlib import Path
 from unittest.mock import Mock,  PropertyMock
 import pytest
@@ -373,3 +374,32 @@ class TestAutenticacao:
         
         with pytest.raises(exc.CredentialsError):
             autenticador._pegar_chave_jwt()
+
+
+    def test_descodificar_token(self, autenticador, monkeypatch):
+        #credenciais para testes
+        monkeypatch.setenv("SERVICO", "Xirico_program_test")
+        monkeypatch.setenv("KEY_JWT", "programa_xirico_test")
+        
+        token=autenticador.gerar_token({"id":1})
+        autenticador.descodificar_token(token)
+        
+        
+    def test_descodificar_token_assinatura_invalida(self, autenticador):
+        
+        token=autenticador.gerar_token({"id":1})
+        
+        autenticador._chave_jwt=b'$2b$12$7ZWzcnnJ.ehI.FGaOJZyT.rnkvYGosIHbggigt1DqH9k6Zi1UT9eC'
+        
+        with pytest.raises( jwt.exceptions.InvalidSignatureError):
+            autenticador.descodificar_token(token)
+
+
+    def test_descodificar_token_expirado(self, autenticador, mocker):
+        token=autenticador.gerar_token({"id":1})
+        mocker_decode= mocker.patch("jwt.decode", side_effect= jwt.exceptions.ExpiredSignatureError)
+        with pytest.raises(jwt.exceptions.ExpiredSignatureError):
+            autenticador.descodificar_token(token)
+
+        mocker_decode.assert_called() 
+        
