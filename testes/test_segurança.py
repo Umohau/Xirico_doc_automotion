@@ -271,7 +271,7 @@ class TestOtpMixIn:
     def test_enviar_codigo_credenciais_imcompletas(self, OtpMixIn, monkeypatch):
        """
        given:
-           objeto OtpMixIn com metodo verificar_otp.
+           objeto OtpMixIn com metodo enviar_codigo.
            
        when:
            enviar_codigo é chamado  mas nao encontra as credenciais (Email ou SENHA_EMAIL).
@@ -293,7 +293,7 @@ class TestAutenticacao:
         return Autenticacao()
         
         
-    def test_pegar_chave_jwt(self, monkeypatch, autenticador, mocker):
+    def test_pegar_chave_jwt_nao_encontrada(self, monkeypatch, autenticador, mocker):
         """
         given:
             objeto autenticador com metodo _pegar_chave_jwt.
@@ -327,3 +327,33 @@ class TestAutenticacao:
         mock_set.assert_called_once()
         
         assert len(chave) > 40 #verifica se a chave tem mais de 40 caracteres
+        
+        
+    def test_pegar_chave_jwt_encontrada(self, autenticador, mocker, monkeypatch):
+        """
+        given:
+            objeto autentucador com o metodo _pegar_chave_jwt.
+            
+        when:
+            pegar_chave_jwt é chamado e encontra a chave no confre do SO.
+            
+        then:
+            nao deve ser criada ou armazenada uma nova chave. 
+        """
+        #modifica as credenciais da chave_jwt para testes
+        monkeypatch.setenv("SERVICO", "Xirico_program_test")
+        monkeypatch.setenv("KEY_JWT", "programa_xirico_test")
+        
+        #recupera as chaves de teste do env
+        servico=os.getenv("SERVICO")
+        key=os.getenv("KEY_JWT")
+        
+        #substitue  set e get password de keyrings para nao poluir o confre.
+        mock_get= mocker.patch("keyring.get_password", return_value=42) #forca o retorno de 42 (simula chave encontrada)
+        mock_set= mocker.patch("keyring.set_password")
+        
+        autenticador._pegar_chave_jwt() #executa o metodo pegar_chave_jwt
+        
+        mock_get.assert_called_once_with(servico, key)
+        mock_set.assert_not_called()
+        
