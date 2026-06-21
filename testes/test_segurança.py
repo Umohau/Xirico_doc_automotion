@@ -377,18 +377,39 @@ class TestAutenticacao:
 
 
     def test_descodificar_token(self, autenticador, monkeypatch):
+        """
+        given:
+            objeto autenticador  com metodo descodificar_token.
+            
+        when:
+            o token é valido (chave correta , dentro do prazo)
+            
+        then:
+            os dados esperados devem estar contidos no retorno
+        """
         #credenciais para testes
         monkeypatch.setenv("SERVICO", "Xirico_program_test")
         monkeypatch.setenv("KEY_JWT", "programa_xirico_test")
-        
-        token=autenticador.gerar_token({"id":1})
-        autenticador.descodificar_token(token)
-        
+        esperado={"id":1}
+        token=autenticador.gerar_token(esperado)
+        dados= autenticador.descodificar_token(token)
+        assert esperado.items() <= dados.items()
         
     def test_descodificar_token_assinatura_invalida(self, autenticador):
+        """
+        given:
+            objeto autenticador  com metodo descodificar_token.
+            
+        when:
+            a assinatura do token é invalida(errada).
+            
+        then:
+            deve ser levantada a excecao InvalidSignatureError.
+        """
         
-        token=autenticador.gerar_token({"id":1})
+        token=autenticador.gerar_token({"id":1}) #gera o token
         
+        #sobreescreve o atributo chave_jwt(torna a chave errada)
         autenticador._chave_jwt=b'$2b$12$7ZWzcnnJ.ehI.FGaOJZyT.rnkvYGosIHbggigt1DqH9k6Zi1UT9eC'
         
         with pytest.raises( jwt.exceptions.InvalidSignatureError):
@@ -396,10 +417,23 @@ class TestAutenticacao:
 
 
     def test_descodificar_token_expirado(self, autenticador, mocker):
-        token=autenticador.gerar_token({"id":1})
+        """
+        given:
+            objeto autenticador  com metodo descodificar_token.
+            
+        when:
+            o token descodificado já expirou.
+            
+        then:
+            deve levantar_se a excecao ExpiredSignatureError.
+        """
+        token=autenticador.gerar_token({"id":1}) #gera o token
+        
+        #força o metodo decode do jwt a a levantar ExpiredSignatureError
+        #simula otp expirado
         mocker_decode= mocker.patch("jwt.decode", side_effect= jwt.exceptions.ExpiredSignatureError)
+        
         with pytest.raises(jwt.exceptions.ExpiredSignatureError):
             autenticador.descodificar_token(token)
-
         mocker_decode.assert_called() 
         
