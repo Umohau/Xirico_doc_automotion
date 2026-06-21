@@ -395,6 +395,7 @@ class TestAutenticacao:
         dados= autenticador.descodificar_token(token)
         assert esperado.items() <= dados.items()
         
+        
     def test_descodificar_token_assinatura_invalida(self, autenticador):
         """
         given:
@@ -436,4 +437,27 @@ class TestAutenticacao:
         with pytest.raises(jwt.exceptions.ExpiredSignatureError):
             autenticador.descodificar_token(token)
         mocker_decode.assert_called() 
+        
+
+    def test_guardar_token(self, autenticador, mocker, monkeypatch):
+        """
+        given:
+            objeto autenticador com metodo guardar_token.
+            
+        when:
+            quando as credenciais e o confre SO estao disponiveis.
+            
+        then:
+            set_password deve ser chamado uma vez , sem levatar excevoea.
+        """
+        mock_set=mocker.patch("keyring.set_password") #mocka o metodo set_password
+        
+        monkeypatch.setenv("SERVICO", "Xirico_program_test") #configura o env SERVICO para teste
+        
+        
+        token='tyeuh uetujeh eyij' #token a armazenar
+        usuario='email@teste.com'  #usuario do token
+        
+        autenticador.guardar_token(usuario, token)
+        mock_set.assert_called_once()
         
