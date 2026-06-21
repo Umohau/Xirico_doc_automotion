@@ -7,7 +7,7 @@ from unittest.mock import Mock,  PropertyMock
 import pytest
 from datetime import datetime
 import exc
-from segurança import SenhaMixIn, Auditoria, OtpMixIn
+from segurança import SenhaMixIn, Auditoria, OtpMixIn, Autenticacao
 
 @pytest.mark.password
 class TestSenhaMixIn:
@@ -266,3 +266,64 @@ class TestOtpMixIn:
         codigo="12345678"
         with pytest.raises(AttributeError):
             OtpMixIn.verificar_otp(codigo)
+            
+            
+    def test_enviar_codigo_credenciais_imcompletas(self, OtpMixIn, monkeypatch):
+       """
+       given:
+           objeto OtpMixIn com metodo verificar_otp.
+           
+       when:
+           enviar_codigo é chamado  mas nao encontra as credenciais (Email ou SENHA_EMAIL).
+           
+       then:
+           deve ser levantada a excecao CredentialsError.
+       """
+       #simula a ausencia de Email
+       monkeypatch.delenv("EMAIL", raising=False)
+       monkeypatch.delenv("SENHA_EMAIL", raising=False)
+       destino="exemplo@gmail.com"
+       with pytest.raises(exc.CredentialsError):
+            OtpMixIn.enviar_codigo(destino)
+
+
+class TestAutenticacao:
+    @pytest.fixture
+    def autenticador(self):
+        return Autenticacao()
+        
+        
+    def test_pegar_chave_jwt(self, monkeypatch, autenticador, mocker):
+        """
+        given:
+            objeto autenticador com metodo _pegar_chave_jwt.
+            
+        when:
+            _pegar_chave_jwt é chamado, busca a chave  no confre do SO e nao a encontra.
+            
+        then:
+            deve gerar uma nova chave com mais de 40 carecteres e retornar-la.
+        """
+        
+        #modifica as credenciais da chave_jwt para testes
+        monkeypatch.setenv("SERVICO", "Xirico_program_test")
+        monkeypatch.setenv("KEY_JWT", "programa_xirico_test")
+        
+        #recupera as chaves de teste do env
+        servico=os.getenv("SERVICO")
+        key=os.getenv("KEY_JWT")
+        
+        #forca get_password de keyrings a retornar None(nao encontrou a chave)
+        mock_get= mocker.patch("keyring.get_password", return_value=None)
+        
+        #substitue o set_password por um mock, para nao poluir o confre de chaves
+        mock_set= mocker.patch("keyring.set_password")
+        
+        #executa o metodo buscar_chave
+        chave=autenticador._pegar_chave_jwt()
+        
+        #checa se os mocks get e set foram chamados
+        mock_get.assert_called_once_with(servico, key)
+        mock_set.assert_called_once()
+        
+        assert len(chave) > 40 #verifica se a chave tem mais de 40 caracteres
