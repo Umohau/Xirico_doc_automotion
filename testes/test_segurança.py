@@ -461,3 +461,23 @@ class TestAutenticacao:
         autenticador.guardar_token(usuario, token)
         mock_set.assert_called_once()
         
+        
+    def test_guardar_token_credenciais_incompletas(self, monkeypatch, autenticador):
+        """
+        given:
+            objeto autenticador com metodo guardar_token.
+            
+        when:
+            quando a credencial servico nao foi encontrada ou é None no env.
+            
+        then:
+            deve ser levantada a excecao CredentialsError.
+        """
+        token='tyeuh uetujeh eyij' #token a armazenar
+        usuario='email@teste.com'  #usuario do token
+        #remove a credencial servico para teste
+        monkeypatch.delenv("SERVICO", raising=False)
+        
+        with pytest.raises(exc.CredentialsError):
+            autenticador.guardar_token(usuario, token)
+            
