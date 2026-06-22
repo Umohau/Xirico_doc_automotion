@@ -1,9 +1,9 @@
 from pydantic import BaseModel, Field, EmailStr, field_validator
 from pydantic_extra_types.phone_numbers import PhoneNumber
+from typing import Optional
 
 
 class SchemaOperador(BaseModel):
-    id:int
     nome:str
     identificacao:str=Field(..., pattern=r'^\d{12}[A-Z]$')
     telefone: PhoneNumber
@@ -26,5 +26,9 @@ class SchemaOperador(BaseModel):
         return True
 
 
-
-
+class SchemaCliente(BaseModel):
+    nome: str=Field(min_length=3)
+    dominio: Optional[str]=Field(min_length=8)
+    telefone: PhoneNumber
+    email: EmailStr
+    endereco: str=Field(min_length=25)
