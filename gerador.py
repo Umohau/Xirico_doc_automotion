@@ -10,12 +10,13 @@ class Documento:
     
     def carregar_modelo(self, caminho:str) ->DocxTemplate:
         """
-        Verifica se o arquivo existe no caminho fornecido no init.
+        Verifica se o arquivo existe no caminho fornecido .
+        
         Args:
             caminho(str): caminho do arquivo.
             
         Returns:
-            DocxTemplante: uma instancia de DocxTemplante do modelo.
+            DocxTemplate: uma instancia de DocxTemplante do modelo.
             
         Raises:
             FileNotFoundError: se o arquivo nao for encontrdo.
@@ -66,7 +67,9 @@ class Documento:
         
         #preenchendo o modelo e retornando
         #o documento preenchido
+        logger.debug("renderizando modelo")
         modelo.render(dados)
+        logger.info("modelo renderizado")
         return modelo
         
        
@@ -129,98 +132,73 @@ class Gerador:
         self._base=InfraGerador().base
         self._caminho_gerado=self._base/"documentos gerados"
         
+    
+    def _gerar_documento(self, dados: dict ,caminho_modelo, caminho_saida):
+       #carrega o modelo
+        modelo=self._documento.carregar_modelo(str(caminho_modelo))
+        #preenche o modelo
+        documento_gerado=self._documento.preencher(modelo, dados)
+        #salva o documento geradi
+        self._documento.salvar(documento_gerado, str(caminho_saida))
+        
         
     def gerar_recibo(self, dados: dict) -> Path:
-        nome=f"recibo{dados.get('data')}.docx" #nome dos recibos gerados
+        timestamp=datetime.today().strftime("%d_%m_%Y_%H%M%S")
+        nome=f"recibo{timestamp}.docx" #nome dos recibos gerados
         caminho_modelo=self._base/'modelos'/"recibo_template.docx"
         caminho_novo_recibo= self._caminho_gerado/"recibos"/nome
         
-        #carregando modelo
-        modelo_rec=self._documento.carregar_modelo(str(caminho_modelo))
-        #preenchendo modelo
-        documento_gerado=self._documento.preencher(modelo_rec, dados)
-        #salvando novo recibo
-        self._documento.salvar(documento_gerado, str(caminho_novo_recibo))
+        self._gerar_documento(dados, caminho_modelo, caminho_novo_recibo)
         return caminho_novo_recibo
         
 
     def gerar_pedido_quota(self, dados:dict) -> Path:
-        nome=f"ped_quota{dados.get('data')}.docx"
+        timestamp=datetime.today().strftime("%d_%m_%Y_%H%M%S")
+        nome=f"ped_quota{timestamp}.docx"
         caminho_modelo=str(self._base/"modelos"/"ped_quota_template.docx")
         caminho_nova_quota=self._caminho_gerado/"pedido_quota"/nome
         
-        #carrega modelo para preechimento
-        modelo_quota= self._documento.carregar_modelo(caminho_modelo)
+        self._gerar_documento(dados, caminho_modelo, caminho_nova_quota)
         
-        #preenche modelo
-        novo_pedido_quota= self._documento.preencher(modelo_quota, dados)
-        
-        #salva o documento gerado
-        self._documento.salvar(novo_pedido_quota, str(caminho_nova_quota))
         return caminho_nova_quota
        
        
     def gerar_pedido_licenca(self, dados:dict) ->Path:
-        nome=f"pedido_licenca_{dados.get('data')}.docx"
+        timestamp=datetime.today().strftime("%d_%m_%Y_%H%M%S")
+        nome=f"pedido_licenca_{timestamp}.docx"
         caminho_modelo= str(self._base/"modelos"/"pedido_licenca_template.docx")
-        caminho_novo_pedido= self._base/self._caminho_gerado/"pedidos_licenca"/nome
+        caminho_novo_pedido= self._caminho_gerado/"pedidos_licenca"/nome
         
-        #carrega modelo para preenchimento
-        modelo=self._documento.carregar_modelo(caminho_modelo)
-        
-        #preenche o modelo
-        documento_gerado= self._documento.preencher(modelo, dados)
-        
-        #salva o documento gerado
-        self.documenro.salvar(documento_gerado,str( caminho_novo_pedido))
+        self._gerar_documento(dados, caminho_modelo, caminho_novo_pedido)
         return  caminho_novo_pedido
         
         
     def gerar_pedido_certif_origem(self, dados:dict) ->Path:
-        nome=f"pedido_certf_origem_{dados.get('data')}.docx"
+        timestamp=datetime.today().strftime("%d_%m_%Y_%H%M%S")
+        nome=f"pedido_certf_origem_{timestamp}.docx"
         caminho_modelo= str(self._base/"modelos"/"pedido_certf_origem_template.docx")
-        caminho_novo_pedido= self._base/self._caminho_gerado/"certificados_origem_P"/nome
+        caminho_novo_pedido= self._caminho_gerado/"certificados_origem_P"/nome
         
-        #carrega modelo para preenchimento
-        modelo=self._documento.carregar_modelo(caminho_modelo)
-        
-        #preenche o modelo
-        documento_gerado= self._documento.preencher(modelo, dados)
-        
-        #salva o documento gerado
-        self.documenro.salvar(documento_gerado,str( caminho_novo_pedido))
-        return  caminho_novo_pedid
+        self._gerar_documento(dados, caminho_modelo, caminho_novo_pedido)
+        return  caminho_novo_pedido
         
         
     def gerar_pedido_declar_noncites(self, dados:dict) ->Path:
-        nome=f"pedido_decla_noncites_{dados.get('data')}.docx"
+        timestamp=datetime.today().strftime("%d_%m_%Y_%H%M%S")
+        nome=f"pedido_decla_noncites_{timestamp}.docx"
         caminho_modelo= str(self._base/"modelos"/"pedido_decla_noncites_template.docx")
-        caminho_novo_pedido= self._base/self._caminho_gerado/"declaracoes_non_cites_P"/nome
+        caminho_novo_pedido= self._caminho_gerado/"declaracoes_non_cites_P"/nome
         
-        #carrega modelo para preenchimento
-        modelo=self._documento.carregar_modelo(caminho_modelo)
-        
-        #preenche o modelo
-        documento_gerado= self._documento.preencher(modelo, dados)
-        
-        #salva o documento gerado
-        self.documenro.salvar(documento_gerado,str( caminho_novo_pedido))
+        self._gerar_documento(dados, caminho_modelo, caminho_novo_pedido)
         return  caminho_novo_pedido
     
     def gerar_pedido_certif_sanitario(self, dados:dict) ->Path:
-        nome=f"pedido_certif_sanitario_{dados.get('data')}.docx"
+        timestamp=datetime.today().strftime("%d_%m_%Y_%H%M%S")
+        nome=f"pedido_certif_sanitario_{timestamp}.docx"
         caminho_modelo= str(self._base/"modelos"/"pedido_certif_sanitario_template.docx")
-        caminho_novo_pedido= self._base/self._caminho_gerado/"certificados_sanitarios_P"/nome
+        caminho_novo_pedido= self._caminho_gerado/"certificados_sanitarios_P"/nome
         
-        #carrega modelo para preenchimento
-        modelo=self._documento.carregar_modelo(caminho_modelo)
-        
-        #preenche o modelo
-        documento_gerado= self._documento.preencher(modelo, dados)
-        
-        #salva o documento gerado
-        self.documenro.salvar(documento_gerado,str( caminho_novo_pedido))
+        self._gerar_documento(dados, caminho_modelo, caminho_novo_pedido)
         return  caminho_novo_pedido
         
     
-
