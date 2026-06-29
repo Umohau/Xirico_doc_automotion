@@ -16,131 +16,134 @@ Ensure that the same Connector object is used in both the InfraData and the Clie
         
     def insert(dados: dict)->int:
         '''
-        Insere dados na tabela clientes.
-        
+        Insert data into the clients table.
+
         Args:
-            dados(dict): dados inseridos na tabela
+            dados (dict): Data to be inserted into the table.
+        
         Returns:
-            int: id da nova insersao
+            int: ID of the newly inserted record.
         
         Raises:
-            DuplicteError: se o cliente ja existir
+            DuplicteError: If the client already exists.
         '''
         try:
             return super().insert(dados)
       
         except DuplicateError:
-                logger.warning('tentativa de inserir cliente ja existente')
-                raise DuplicateError('já existe um cliente com os dados fornrcidos') from e
+                logger.warning('Attempt to insert an already existing client.')
+                raise DuplicateError('Client already exists with the provided data')
 
 
     def delete(id:int)-> int:
         '''
-        Deleta um cliente da tabela clientes
-        (faz um soft delete alterando o estado ativo de true para false)
+        Delete a client from the clients table.
+
+        Performs a soft delete by setting the `ativo` field from `True` to `False`.
         
         Args:
-            id(int): id do cliente deletado
-            
-        Retunrs:
-           int: numero de clientes deletados
+            id (int): ID of the client to be deleted.
+        
+        Returns:
+            int: Number of clients deleted.
         
         Raises:
-            EntityNotFoundError: se o id do cliente nao for encontrado
+            EntityNotFoundError: If the client ID is not found.
         '''
         try:
             return super().delete(id)
         except EntityNotFoundError:
-            logger.warning("falha ao deletar cliente de id  %d -nao encontrado", id)
-            raise EntityNotFoundError('cliente nao encontrado ')
+            logger.warning("Failed to delete client with id %d - not found", id)
+            raise EntityNotFoundError('Could not delete client with id %d - not found'')
 
     def reactivate (self , email:str) -> int:
         """
-        Reativa um cliente inativo, alterando seu estado ativo de False para True.
-        
+        Reactivate an inactive client by changing its active state from `False` to `True`.
+
         Args:
-            email(int): email do cliente alvo da operacao.
-            
+            email (str): Email of the target client.
+        
         Returns:
-            int: clientes reactivados
-            
+            int: Number of clients reactivated.
+        
         Raises:
-            EntityNotFoundError: se o cliente inativo nao for encontrado.
+            EntityNotFoundError: If the inactive client is not found.
         """
         activar= self.tabela.update().values(ativo=True).where(sa.and_(self.tabela.c.email== email, self.tabela.c.ativo==False))
         
         with self.engine.begin() as conexao:
             res=conexao.execute(activar).rowcount
             if not  res:
-                logger1.warning("falha ao  reativar cliente. Nao encontrado")
-                raise EntityNotFoundError("cliente email: {email}  nao encontrado")
+                logger1.warning("Failed to reactivate client - not found")
+                raise EntityNotFoundError("No client found for email: {email}")
             
     def update(self, dados:dict,  id:int=None, email:str=None) -> list:
         """
-        Actualida dados de um cliente especificado pelo id, em campos fornecidos no argumento dados.
-        
+        Update data for a client specified by either ID or email, using fields provided in the `dados` argument.
+
         Args:
-            id(int): id do cliente a receber actualizacao
-            dados(dict): novos dados do cliente
-       
-       Returns:
-            list:lista dos campos actualizdos
+            id (int): ID of the target client.
+            email (str): Email of the target client.
+            dados (dict): New data for the client.
+        
+        Returns:
+            list: List of updated fields.
         
         Raises:
-            EntityNotFoundError: se nenhum clinte for encontrado com o id fornecido
+            EntityNotFoundError: If no client is found with the provided ID or email.
             
         """
         try:
             return super.update(dados, id, email)
         except EntityNotFoundError:
-            logger.warning("falha ao tentar  actulizar dados para cliente id: %d-nao encontrado", id)
-            raise EntityNotFoundError(f"cliente com id {id} nao encontrado")
+            logger.warning("Failed to update data for client - not found", id)
+            raise EntityNotFoundError(f"'No client found")
             
             
     def search_id(self, id:int) -> dict:
          try:
              return super().search_id(id)
          except EntityNotFoundError:
-              logger.warning("a busca por id nao encontrou um cliente com id:%d", id)
-              raise EntityNotFoundError("nenhum cliente com o id fornecido")   
+              logger.warning("No client found with id:%d", id)
+              raise EntityNotFoundError("'Client not found for the provided ID.'")   
          
          
     def search_all(self) -> list[dict]:
         """
-        busca clientes activos na tabela clientes, retorna todos os registros da tabela
-        
+        Fetch all active clients from the clients table.
+
         Returns:
-            list[dict]: uma lista com dicionarios contendo dados resultados da busca
-          
+            list[dict]: A list of dictionaries containing the query result data.
+        
         Raises:
-            EmptyTableError: se a tabela estiver vazia
+            EmptyTableError: If the table is empty.
         """
         try:
             return super().search_all()
         except EmptyTableError:
-             logger.warning("tentativa de buscar dados numa tabela (clientes) vazia")
-             raise EmptyTableError("sua tabela clientes esta vazia")
+             logger.warning('Failed to fetch data from clients table: table is empty.')
+             raise EmptyTableError("'Cannot fetch data from empty clients table.'")
 
 
     def search_name(self, nome:str) -> list[dict]:
         """
-        busca um cliente com o nome similar ao nome fornecido no argumento nome.
-     
-       Args:
-          nome(str): nome alvo da busca (pode ser parte do nome)
-       
-       Returns:
-          list[dict]: lista de dicionarios com dados resultados da busca
-          
+        Search for clients with a name similar to the one provided in the `nome` argument.
+
+        Args:
+            nome (str): Target name for the search (can be a partial match).
+        
+        Returns:
+            list[dict]: A list of dictionaries containing the query result data.
+        
         Raises:
-          EntityNotFoundError: se  nenhum nome nos registros corresponder ao nome fornecido.
+            EntityNotFoundError: If no record matches the provided name.
           
         """
         try:
             return super().search_name(nome)
         except EntityNotFoundError:
-             logger.warning("a busca por nome nao encontrou nenhum cliente com nome parecido a '%s' ", nome)
-             raise EntityNotFoundError(f"nenhum cliente corrsponde ao nome '{nome}")
+             logger.warning(" Search by name did not find any client with a name similar to '%s' ", nome)
+             raise EntityNotFoundError(f"'No client matches the name {nome}'")
              
     @property        
     def total_records(self) -> int:
