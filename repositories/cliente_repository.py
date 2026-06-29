@@ -54,7 +54,7 @@ Ensure that the same Connector object is used in both the InfraData and the Clie
             return super().delete(id)
         except EntityNotFoundError:
             logger.warning("Failed to delete client with id %d - not found", id)
-            raise EntityNotFoundError('Could not delete client with id %d - not found'')
+            raise EntityNotFoundError('Could not delete client with id %d - not found')
 
     def reactivate (self , email:str) -> int:
         """
