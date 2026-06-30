@@ -1,10 +1,12 @@
+import sqlalchemy as sa
 import logging
 from Projeto_xirico.interfaces.repository_interfaces import RepositoryInterface
+from Projeto_xirico.exc import EntityNotFoundError, DuplicateError, EmptyTableError
 
 logger=logging.getLogger(__name__)
 
 
-class ClientsRepoitory(RepositoryInterface):
+class ClientsRepository(RepositoryInterface):
     def __init__(self, conector):
         super().__init__(conector)
         if 'clients' not in self.metadata.tables:
@@ -74,7 +76,7 @@ Ensure that the same Connector object is used in both the InfraData and the Clie
         with self.engine.begin() as conexao:
             res=conexao.execute(activar).rowcount
             if not  res:
-                logger1.warning("Failed to reactivate client - not found")
+                logger.warning("Failed to reactivate client - not found")
                 raise EntityNotFoundError("No client found for email: {email}")
             
     def update(self, dados:dict,  id:int=None, email:str=None) -> list:
@@ -94,7 +96,7 @@ Ensure that the same Connector object is used in both the InfraData and the Clie
             
         """
         try:
-            return super.update(dados, id, email)
+            return super().update(dados, id, email)
         except EntityNotFoundError:
             logger.warning("Failed to update data for client - not found", id)
             raise EntityNotFoundError(f"'No client found")
