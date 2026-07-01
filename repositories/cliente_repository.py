@@ -1,12 +1,12 @@
 import sqlalchemy as sa
 import logging
-from Projeto_xirico.interfaces.repository_interfaces import RepositoryInterface
-from Projeto_xirico.exc import EntityNotFoundError, DuplicateError, EmptyTableError
+from Projeto_xirico.interfaces.repository_interfaces import BaseRepository
+from Projeto_xirico.exc import EntityNotFoundError, DuplicateError, EmptyTableError, IdentificatorError
 
 logger=logging.getLogger(__name__)
 
 
-class ClientsRepository(RepositoryInterface):
+class ClientsRepository(BaseRepository):
     def __init__(self, conector):
         super().__init__(conector)
         if 'clients' not in self.metadata.tables:
@@ -16,7 +16,7 @@ Ensure that the same Connector object is used in both the InfraData and the Clie
         self.tabela= self.metadata.tables["clients"]
         
         
-    def insert(dados: dict)->int:
+    def insert(self, dados: dict)->int:
         '''
         Insert data into the clients table.
 
@@ -37,7 +37,7 @@ Ensure that the same Connector object is used in both the InfraData and the Clie
                 raise DuplicateError('Client already exists with the provided data')
 
 
-    def delete(id:int)-> int:
+    def delete(self, id:int)-> int:
         '''
         Delete a client from the clients table.
 
@@ -78,15 +78,16 @@ Ensure that the same Connector object is used in both the InfraData and the Clie
             if not  res:
                 logger.warning("Failed to reactivate client - not found")
                 raise EntityNotFoundError("No client found for email: {email}")
-            
-    def update(self, dados:dict,  id:int=None, email:str=None) -> list:
+
+                        
+    def update(self, dados_:dict,  id:int=None, email:str=None) -> list:
         """
         Update data for a client specified by either ID or email, using fields provided in the `dados` argument.
 
         Args:
             id (int): ID of the target client.
             email (str): Email of the target client.
-            dados (dict): New data for the client.
+            dados_ (dict): New data for the client.
         
         Returns:
             list: List of updated fields.
@@ -95,12 +96,23 @@ Ensure that the same Connector object is used in both the InfraData and the Clie
             EntityNotFoundError: If no client is found with the provided ID or email.
             
         """
-        try:
-            return super().update(dados, id, email)
-        except EntityNotFoundError:
-            logger.warning("Failed to update data for client - not found", id)
-            raise EntityNotFoundError(f"'No client found")
+        if not email and not id:
+            raise IdentificatorError("nao foi passado nenhum identificador do  alvo (id ou email)")
+        actualizar= self.tabela.update()
+        if id==None:
+            actualizar=actualizar.where(sa.and_(self.tabela.c.email==email, self.tabela.c.ativo==True))
+        else:
+             actualizar=actualizar.where(sa.and_(self.tabela.c.id==id, self.tabela.c.ativo==True))
+        actualizar=actualizar.values(dados_)
+   
+        with self.engine.begin() as conexao:
+            res=conexao.execute(actualizar).rowcount
             
+            if not res:
+                logger.warning("Failed to update data for client - not found")
+                raise EntityNotFoundError(f"'No client found")
+            return list(dados_.keys()) 
+                                    
             
     def search_id(self, id:int) -> dict:
          try:
