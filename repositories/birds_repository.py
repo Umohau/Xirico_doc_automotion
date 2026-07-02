@@ -1,6 +1,9 @@
 import sqlalchemy as sa
-from Projeto_xirico.interfaces.repository_interface import BaseRepository
-from Projeto_xiric.exc import EntityNotFoundError, DuplicateError, EmptyTableError
+import logging
+from Projeto_xirico.interfaces.repository_interfaces import BaseRepository
+from Projeto_xirico.exc import EntityNotFoundError, DuplicateError, EmptyTableError, IdentificatorError
+
+logger=logging.getLogger(__name__)
 
 
 class BirdsRepository(BaseRepository):
@@ -28,9 +31,9 @@ Ensure that the same Connector object is used in both the InfraData and the Bird
         """
         try:
             return super().insert(dados)
-        except DuplicateError:
+        except DuplicateError as e:
             logger.warning('Attempt to insert an already existing bird.')
-            raise DuplicateError('Bird with provided data already exists')
+            raise DuplicateError('Bird with provided data already exists') from e
 
 
     def delete(self, id:int) -> int:
@@ -68,28 +71,28 @@ Ensure that the same Connector object is used in both the InfraData and the Bird
         Raises:
             EntityNotFoundError: If the target bird does not exist or is already available.
         """
-        dispo= self.tabela.update().values(disponivel=True)
+        dispo= self.tabela.update().values(ativo=True)
         dispo=dispo.where(sa.and_(
-            self.tabela.c.id==ave_id,
-            self.tabela.c.disponivel==False
+            self.tabela.c.nome_cientifico==nome_cientifico,
+            self.tabela.c.ativo==False
             ))
             
         with self.engine.begin() as conexao:
             res=conexao.execute(dispo).rowcount
             if not res:
-                logger.warning('Bird with id %d not found', ave_id)
-                raise EntityNotFoundError(f'Bird {ave_id} not found or already available')
+                logger.warning('Bird  not found')
+                raise EntityNotFoundError(f'Bird  not found or already available')
             return True
             
             
-    def update(self, dados:dict, id:int=None, nome_cientifico=None):
+    def update(self, dados_:dict, id:int=None, nome_cientifico=None):
         """
         Update data for a bird specified by either ID or scientific name, using fields provided in the `dados` argument.
 
         Args:
             id (int): ID of the bird to be updated.
             nome_cientifico (str): Scientific name of the target bird.
-            dados (dict): New data for the bird.
+            dados_ (dict): New data for the bird.
         
         Returns:
             list: List of updated fields.
@@ -100,20 +103,23 @@ Ensure that the same Connector object is used in both the InfraData and the Bird
         Note:
             If both `id` and `nome_cientifico` are provided simultaneously, `id` takes precedence.
         """
+        if not id and not nome_cientifico:
+            logger.warning("sem identificadores, id ou nome_cientifico")
+            raise IdentificatorError("nenhum identificador da ave foi fornecido (id ou email")
         actualizar= self.tabela.update()
         if not id:
-            where(sa.and_(self.tabela.c.nome_cientifico==nome_cientifico, self.tabela.c.ativo==True))
+            actualizar=actualizar.where(sa.and_(self.tabela.c.nome_cientifico==nome_cientifico, self.tabela.c.ativo==True))
         else:
              actualizar=actualizar.where(sa.and_(self.tabela.c.id==id, self.tabela.c.ativo==True))
-        actualizar=actualizar.values(dados)
+        actualizar=actualizar.values(dados_)
     
         with self.engine.begin() as conexao:
             res=conexao.execute(actualizar).rowcount
             
             if not res:
-                logger1.warning('Failed to update data for bird: not found.' )
+                logger.warning('Failed to update data for bird: not found.' )
                 raise EntityNotFoundError('Bird not found for update.')
-            return list(dados.keys())
+            return list(dados_.keys())
             
             
     def search_name(self, nome:str)-> list[dict]:
@@ -136,7 +142,7 @@ Ensure that the same Connector object is used in both the InfraData and the Bird
             for resultado in res.fetchall():
                 dados.append(resultado._asdict())
             if not dados:
-                logger1.warning("No bird similar to '%s' found", nome)
+                logger.warning("No bird similar to '%s' found", nome)
                 raise EntityNotFoundError(f"No bird matches the name {nome}")
             return dados
 
@@ -145,7 +151,7 @@ Ensure that the same Connector object is used in both the InfraData and the Bird
         try:
             return super().search_id(id)
         except EntityNotFoundError:
-            logger1.warning('No bird found with id:%d', id)
+            logger.warning('No bird found with id:%d', id)
             raise
 
 
@@ -155,3 +161,6 @@ Ensure that the same Connector object is used in both the InfraData and the Bird
         except EmptyTableError:
             logger1.warning("Cannot fetch data from empty birds table.")
             raise EmptyTableError('Cannot fetch data from empty birds table.')
+            
+            
+   
