@@ -214,6 +214,7 @@ def test_search_all_sucess(repo, dados):
     repo.insert(dados)
     clientes=repo.search_all()
     assert isinstance(clientes, list)
+    assert len(clientes)==1
     assert all(item in clientes[0].items() for item in dados.items())
     
 def test_search_all_empty_table(repo):
