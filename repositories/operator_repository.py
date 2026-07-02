@@ -1,12 +1,12 @@
 import sqlalchemy as sa
 import logging
 from Projeto_xirico.exc import DuplicateError, EntityNotFoundError, IdentificatorError, EmptyTableError
-from Projeto_xirico.interfaces.repository_interfaces import RepositoryInterface
+from Projeto_xirico.interfaces.repository_interfaces import BaseRepository
 
 logger=logging.getLogger(__name__)
 
 
-class OperatorRepository(RepositoryInterface):
+class OperatorRepository(BaseRepository):
     def __init__(self, conector):
         super().__init__(conector)
         if 'operators' not in self.metadata.tables:
@@ -57,7 +57,7 @@ Ensure that the same Connector object is used in both the InfraData and the Oper
             raise EntityNotFoundError('Operator does not exist or is already inactive.')
         
         
-    def update(self,dados:dict, id:int=None, email:str=None) ->list:
+    def update(self,dados_:dict, id:int=None, email:str=None) ->list:
         """
         Update data for an active operator specified by either id or email, using fields provided in the data argument.
 
@@ -76,11 +76,25 @@ Ensure that the same Connector object is used in both the InfraData and the Oper
         Note:
             If both email and id are provided simultaneously, id takes precedence.
         """
-        try:
-               return super().update(dados, id, email)
-        except EntityNotFoundError:   
-                logger.error("Error updating data for operator id %d: not found", id)
-                raise EntityNotFoundError(f'No operator found with id {id}')
+        if not email and not id:
+            raise IdentificatorError("No target operator identifier provided (id or email).")
+        actualizar= self.tabela.update()
+        if id is None:
+            actualizar=actualizar.where(sa.and_(self.tabela.c.email==email, self.tabela.c.ativo==True))
+        else:
+             actualizar=actualizar.where(sa.and_(self.tabela.c.id==id, self.tabela.c.ativo==True))
+        actualizar=actualizar.values(dados_)
+    
+        
+        with self.engine.begin() as conexao:
+            res=conexao.execute(actualizar).rowcount
+            
+            if not res:
+                logger.warning('Could not update operator: not found.')
+                raise EntityNotFoundError('Could not update operator: not found.')
+          
+            
+            return list(dados_.keys())
 
         
     def reactivate(self,  id:int) ->bool:
@@ -117,7 +131,7 @@ Returns:
         """
         
         try:
-             return super().buscar_id(id)
+             return super().search_id(id)
         except EntityNotFoundError:
                 logger.warning("Search for operator ID %d returned no results", id)
                 raise EntityNotFoundError('No operator exists with the specified ID.')
@@ -135,7 +149,7 @@ Returns:
                 EmptyTableError: If the table is empty.
         """
         try:
-                return super().buscar_tudo()
+                return super().search_all()
         except EmptyTableError:
                 logger.warning("tentativa de buscar dados na tabela operadores vazia")
                 raise EmptyTableError("sua tabela operadores esta vazia")
@@ -156,7 +170,7 @@ Returns:
           
         """
         try:
-             return super().buscar_nome(nome)
+             return super().search_name(nome)
         except EntityNotFoundError:
              logger.warning("Name search returned no operator similar to '%s' ", nome)
              raise EntityNotFoundError(f"No operator matches the name '{nome}' ")
@@ -212,8 +226,9 @@ Returns:
                 if not operador:
                     raise EntityNotFoundError("'Inactive operator not found.'")    
                 return operador._asdict()
-                
-    def get_password(self, email):
+
+                                
+    def get_password(self, email:str)->bytes:
         """
        Retrieve the operator's password by the provided email.
 
@@ -221,16 +236,20 @@ Returns:
             email (str): Email of the target operator.
         
         Returns:
-            bytes: Password hash with salt..
+            bytes: Password hash with salt.
+            
+            
+        Note:
+            returns None if not found de operator password
         """
         pegar_senha=sa.select(self.tabela.c.senha).where(sa.and_(self.tabela.c.email==email, self.tabela.c.ativo==True))
         
         with self.engine.begin() as conexao:
-            logger.debug("Fetching operator password.")
             res=conexao.execute(pegar_senha)
             senha= res.first()
-            return senha
-            
+            return senha[0]
+        
+                
     def check_unique(self, dados:dict) -> bool:
         """
         Check if the value from the key-value pair in the `dados` argument exists in the operators table.
@@ -245,20 +264,22 @@ Returns:
             DuplicateError: If the data already exists.
         """
         ignorados=["nome", "senha", "endereco", "ativo", "ADM"] #campos nao sujeitos a verificacao de unicidadde
-        campo= next(iter(dados))
-        coluna=getattr(self.tabela.c, campo )
-        valor= next(iter(dados.values()))
-        if campo not in ignorados:
-            busca= sa.select(self.tabela).where(coluna== valor)
-            #realiza a busca no banco
-            logger.debug("Checking uniqueness of %s", campo)
-            with self.engine.begin() as conexao:
-                res=conexao.execute(busca).first()
-                if not res:
-                    logger.debug("Success: %s is unique", campo)
-                    return True
-                logger.debug("Failure: %s is not unique", campo)
-                raise DuplicateError(f"Operator with provided {campo} already exists'")
+        
+        for key, valor in dados.items():
+            coluna=getattr(self.tabela.c, key )
+            if key not in ignorados:
+                busca= sa.select(self.tabela).where(coluna== valor)
+                #realiza a busca no banco
+                logger.debug("Checking uniqueness of %s", key)
+                with self.engine.begin() as conexao:
+                    res=conexao.execute(busca).first()
+                    
+                    if res:
+                        logger.debug("Failure: %s is not unique", key)
+                        raise DuplicateError(f"Operator with provided {key} already exists'")
+                    logger.debug("Success: %s is unique", key)
+                    
+        return True                
             
             
     @property
@@ -269,4 +290,4 @@ Returns:
         Returns:
             int: Total number of operators in the database.
         """
-        return super().total_registros
+        return super().total_records
