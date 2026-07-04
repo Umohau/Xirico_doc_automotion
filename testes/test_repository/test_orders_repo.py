@@ -71,7 +71,7 @@ def test_delete_protected_entity(repo, dados, conector, tmp_path):
     "order_id":id, #id gerado na insercao do pedido
     "processo_docs": docs}
 
-    export=conector.metadata.tables["exportacoes"]# pega a tabela do metadata
+    export=conector.metadata.tables["shipments"]# pega a tabela do metadata
     
     init_dependeces(dados_ex, export, conector.engine ) #povoa a tabela exportacoes para vincular o pedido inserido a esta exportacao.
     
