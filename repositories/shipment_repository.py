@@ -56,20 +56,20 @@ Make sure to use the
 
     def search_epoc(self, data_inicio, data_fim) -> list[dict]:
         """
-        Busca por exportacoes em intervalo de tempo (date) fornecido.
-        
+       Search for exports within the provided time interval (date).
+
         Args:
-            data_inicio(date): data apartir da qual começa a busca.
-            data_fim(date): data maxima ate onde vai  a busca.
-            
+            data_inicio (date): Start date from which the search begins.
+            data_fim (date): End date up to which the search goes.
+        
         Returns:
-            list[dict]: lista de dicionarios como os dados de cada exportacao, organizados por data da mais recente a mais antiga.
-            
+            list[dict]: A list of dictionaries containing the data for each export, ordered by date from newest to oldest.
+        
         Raises:
-            EntityNotFoundError: se nao houverem registros para o intervalo fornecido
-            
+            EntityNotFoundError: If no records are found for the provided interval.
+        
         Note:
-            os resultados incluem a data de envio em orders.
+            The results include the dispatch date in orders.
         """
         dados= list() 
         busca= sa.select(self.tabela, self.orders.c.enviado_at)
@@ -87,8 +87,8 @@ Make sure to use the
         with self.engine.begin() as conexao:
             res= conexao.execute(busca).fetchall()
             if not res:
-                logger.warning("falha: nao foram encontrados registros  na epoca %s a %s", data_inicio, data_fim)
-                raise EntityNotFoundError("nenhum registro encontrado na epoca definida")
+                logger.warning("Failed to find records for period %s to %s", data_inicio, data_fim)
+                raise EntityNotFoundError("No records found for defined period.")
             for resultado in res:
                 dados.append(resultado._asdict())
             return dados
@@ -130,65 +130,65 @@ Make sure to use the
         
     def get_shipments_cl(self, cliente_id: int) -> list[dict]:
         """
-        Busca todas as exportacoes feitas a um cliente pelo seu id.
-        
+        Fetch all exports made to a client by client ID.
+
         Args:
-            cliente_id(int): id do cliente alvo.
-           
+            cliente_id (int): ID of the target client.
+        
         Returns:
-            list[dict]: lista de dicionarios com os dados de cada exportacao ao cliente ordenados da data mais recente a mais antiga.
-            
+            list[dict]: A list of dictionaries containing the data for each export to the client, ordered from newest to oldest by date.
+        
         Raises:
-            EntityNotFoundError: se nao houvem exportacoes que correspondam.
-            
+            EntityNotFoundError: If no matching exports are found.
+        
         Note:
-            Os resultados incluem a data de envio obtida em orders.
+            The results include the dispatch date obtained from orders.
         """
         dados=self._buscar_termo("cliente_id", cliente_id)
         if not dados:
-                logger.warning("falha: nao ha registros de exportacoes referentes ao cliente id%d", cliente_id)
-                raise EntityNotFoundError("nao foram encontradas registros de exportacao para o cliente")
+                logger.warning("Failed: no export records found for client id%d", cliente_id)
+                raise EntityNotFoundError('No export records found for the client.')
         return dados
         
             
     def get_shipment_oid(self, order_id):
          """
-         Busca uma exportacao pelo  id do pedido.
-         
-         Args:
-             order_id(int): id da exportacao alvo da busca.
-             
-         Returns:
-             dict: dicionario comos dados da exportacao.
-             
-         Raises:
-             EntityNotFoundError: se a exportacao nao for emcontrada
+        Retrieve an export by order ID.
+        
+        Args:
+            order_id (int): ID of the target order for the search.
+        
+        Returns:
+            dict: Dictionary containing the export data.
+        
+        Raises:
+            EntityNotFoundError: If the export is not found.
          """
          dados= self._buscar_termo("order_id", order_id)
          if not dados:
-             logger.warning("falha: nao foi encontrada uma exportacao que corrw")
-             raise EntityNotFoundError("nenhuma exportacao com id fornecido")
+             logger.warning("Failed to find a matching export for oid:%s", order_id)
+             raise EntityNotFoundError('No export found for the provided ID.')
          return dados[0]
          
   
     def get_shipments_gid(self, operador_id):
         """
-        Busca todas as exportacoes gerenciadas pelo operador fornecido em operador_id.
-        
+       Fetch all exports managed by the operator provided in `operador_id`.
+
         Args:
-            operador_id(int): id do operador alvo.
-            
+            operador_id (int): ID of the target operator.
+        
         Returns:
-            list[dict]: lista de dicionarios com as exportacoes gerenciadas pelo operador, odenadas da mais recente a mais antiga.
-            
+            list[dict]: A list of dictionaries containing the exports managed by the operator, ordered from newest to oldest.
+        
         Raises:
-            EntityNotFoundError: se nenhuma exportacao gerida pelo operador for encontrada.
+            EntityNotFoundError: If no exports managed by the operator are found.
         """
         
         dados=self._buscar_termo("gestor_id", operador_id)
         
         if not dados:
-            logger.warning("nenhuma exportacao gerida pelo operador id%d", operador_id)
-            raise EntityNotFoundError("nenhuma exportacao referente ao operador informado")
+            logger.warning("No exports managed by operator id%d", operador_id)
+            raise EntityNotFoundError('No exports found for the provided operator')
         return dados
 
