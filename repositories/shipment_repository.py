@@ -4,12 +4,12 @@ from Projeto_xirico.exc import EntityNotFoundError
 
 logger=logging.getLogger(__name__)
 
-class RepositorioExportacoes:
+class ShipmentRepository:
     def __init__(self, conector):
         self.engine=conector.engine
         self.metadata=conector.metadata
-        if 'exportacoes' not in self.metadata.tables:
-            logger1.warning('shipments table not found in metadata object')
+        if 'shipments' not in self.metadata.tables:
+            logger.warning('shipments table not found in metadata object')
             raise RuntimeError("""shipments table not found in metadata.
 Make sure to use the
  SAME Connector object in both the InfraBanco and the RepositorioOrders class.""")
@@ -36,13 +36,13 @@ Make sure to use the
         with self.engine.begin() as conexao:
             try:
                 res= conexao.execute(inserir, dados)
-                return res.inserted_primary_key
+                return res.inserted_primary_key[0]
             except sa.exc.IntegrityError as e:
                 logger.warning('Failed to insert export: ParmError - %s', e.params)
                 raise
 
 
-    def update(self, dados:dict) -> list:
+    def update(self, dados:dict, expo_id) -> list:
         actualizar=self.tabela.update().where(self.tabela.c.exportacao_id== expo_id)
         actualizar=actualizar.values(dados)
         
@@ -51,10 +51,10 @@ Make sure to use the
             if not res:
                 logger.warning("falha: nao foi possivel actualizar exportacao %d. nao encontrada")
                 raise EntityNotFoundError("exportacao nao encontrada")
-            return res
+            return res.rowcount
             
 
-    def serch_epoc(self, data_inicio, data_fim) -> list[dict]:
+    def search_epoc(self, data_inicio, data_fim) -> list[dict]:
         """
         Busca por exportacoes em intervalo de tempo (date) fornecido.
         
@@ -87,7 +87,7 @@ Make sure to use the
         with self.engine.begin() as conexao:
             res= conexao.execute(busca).fetchall()
             if not res:
-                logger1.warning("falha: nao foram encontrados registros  na epoca %s a %s", data_inicio, data_fim)
+                logger.warning("falha: nao foram encontrados registros  na epoca %s a %s", data_inicio, data_fim)
                 raise EntityNotFoundError("nenhum registro encontrado na epoca definida")
             for resultado in res:
                 dados.append(resultado._asdict())
@@ -128,7 +128,7 @@ Make sure to use the
             return dados
             
         
-    def get_shipment_cl(self, cliente_id: int) -> list[dict]:
+    def get_shipments_cl(self, cliente_id: int) -> list[dict]:
         """
         Busca todas as exportacoes feitas a um cliente pelo seu id.
         
@@ -146,12 +146,12 @@ Make sure to use the
         """
         dados=self._buscar_termo("cliente_id", cliente_id)
         if not dados:
-                logger1.warning("falha: nao ha registros de exportacoes referentes ao cliente id%d", cliente_id)
+                logger.warning("falha: nao ha registros de exportacoes referentes ao cliente id%d", cliente_id)
                 raise EntityNotFoundError("nao foram encontradas registros de exportacao para o cliente")
         return dados
         
             
-    def get_shipmente_oid(self, order_id):
+    def get_shipment_oid(self, order_id):
          """
          Busca uma exportacao pelo  id do pedido.
          
@@ -166,12 +166,12 @@ Make sure to use the
          """
          dados= self._buscar_termo("order_id", order_id)
          if not dados:
-             logger1.warning("falha: nao foi encontrada uma exportacao que corrw")
+             logger.warning("falha: nao foi encontrada uma exportacao que corrw")
              raise EntityNotFoundError("nenhuma exportacao com id fornecido")
          return dados[0]
          
   
-    def buscar_exportacoes_gid(self, operador_id):
+    def get_shipments_gid(self, operador_id):
         """
         Busca todas as exportacoes gerenciadas pelo operador fornecido em operador_id.
         
@@ -188,7 +188,7 @@ Make sure to use the
         dados=self._buscar_termo("gestor_id", operador_id)
         
         if not dados:
-            logger1.warning("nenhuma exportacao gerida pelo operador id%d", operador_id)
-            raise EntityNotFoundErrot("nenhuma exportacao referente ao operador informado")
+            logger.warning("nenhuma exportacao gerida pelo operador id%d", operador_id)
+            raise EntityNotFoundError("nenhuma exportacao referente ao operador informado")
         return dados
 
