@@ -1,7 +1,12 @@
 import sqlalchemy as sa
 import sys
+import os
+import secrets
+import string
 import logging
 from pathlib import Path
+from dotenv import load_dotenv
+from datetime import datetime
 
 logger=logging.getLogger(__name__)
 logging.basicConfig(
@@ -21,8 +26,26 @@ def localizar_app():
         if getattr(sys, 'frozen', False):
             return Path(sys.executable).parent
         return Path(__file__).parent
- 
-       
+        
+
+def setup_logging():
+    load_dotenv("config.env")
+    log_level_str = os.getenv("LOG_LEVEL", "DEBUG")
+    log_level = getattr(logging, log_level_str, logging.DEBUG)  
+    
+    logging.basicConfig(
+        format="%(levelname)s: %(name)s: %(message)s: %(asctime)s",
+        datefmt="%H:%M:%S",
+        level=log_level
+    )
+
+# Chama no start do programa
+setup_logging()
+
+def gerar_ord_id():
+    u="".join(secrets.choice(string.digits) for _ in range(6))
+    return "ORD"+u       
+    
 #conector     
 class  Conector:
     """
@@ -91,7 +114,7 @@ class  Conector:
         return self._engine
         
 #infra-estrutura do banco                  
-class InfraBanco:
+class InfraData:
     def __init__(self, conector:Conector):
         self.conector=conector
         self.engine=self.conector.engine#atalho
@@ -103,7 +126,7 @@ class InfraBanco:
     def criar_tabelas(self):
         """ Cria as tabelas no banco de dados 
         """
-        self.operadores= sa.Table("operadores", self.metadata,
+        self.operators= sa.Table("operators", self.metadata,
             sa.Column("id", sa.Integer, primary_key= True),
             sa.Column("nome", sa.String(50), nullable=False),
             sa.Column("identificacao", sa.String(13), unique=True, nullable=False),
@@ -115,7 +138,7 @@ class InfraBanco:
             sa.Column("ativo", sa.Boolean, nullable=False)
                             )
 
-        self.clientes= sa.Table("clientes", self.metadata,
+        self.clients= sa.Table("clients", self.metadata,
             sa.Column("id", sa.Integer, primary_key= True),
             sa.Column("nome", sa.String(50), nullable= False),
             sa.Column("dominio", sa.String(255), unique=True, nullable=True),
@@ -125,29 +148,29 @@ class InfraBanco:
             sa.Column("ativo", sa.Boolean(), default=True)
         )
         
-        self.aves=sa.Table("aves", self.metadata,
+        self.birds=sa.Table("birds", self.metadata,
             sa.Column("id",sa.Integer ,primary_key=True),
             sa.Column("nome_comum", sa.String(50), nullable=False),
             sa.Column("especie", sa.String(25), nullable=False),
             sa.Column("nome_cientifico", sa.String(60), nullable= False, unique=True),
             sa.Column("preco", sa.Integer, nullable=False),
-            sa.Column("disponivel", sa.Bolean(), default=True)         
+            sa.Column("ativo", sa.Boolean(), default=True)         
         )
         
         
         self.orders= sa.Table("orders", self.metadata,
-            sa.Column("order_id", sa.Integer, primary_key=True, nullable=False),
-            sa.Column("cliente_id", sa.Integer, sa.ForeignKey("clientes.id"), nullable=False ),
-            sa.Column("gestor_id", sa.Integer, sa.ForeignKey("operadores.id"), nullable=False ),
-            sa.Column("ave_id", sa.Integer, sa.ForeignKey("aves.id"), nullable=False),
+            sa.Column("order_id", sa.String(9), primary_key=True, nullable=False, default= gerar_ord_id),
+            sa.Column("cliente_id", sa.Integer, sa.ForeignKey("clients.id"), nullable=False ),
+            sa.Column("gestor_id", sa.Integer, sa.ForeignKey("operators.id"), nullable=False ),
+            sa.Column("ave_id", sa.Integer, sa.ForeignKey("birds.id"), nullable=False),
             sa.Column("quantidade", sa.Integer, nullable=False),
-            sa.Column("registado_at", sa.Date(), nullable=False),
+            sa.Column("registado_at", sa.Date(), nullable=False, default= datetime.today),
             sa.Column("enviado_at", sa.Date()),
-            sa.Column("estado", sa.String(9), default="Pendente") 
+            sa.Column("estado", sa.String(10), default="Pendente") 
         )  
         
         
-        self.exportacoes= sa.Table("exportacoes", self.metadata,
+        self.shipments= sa.Table("shipments", self.metadata,
            sa.Column("exportacao_id", sa.Integer, primary_key=True),
            sa.Column('order_id', sa.Integer, sa.ForeignKey("orders.order_id"), nullable=False, index=True),
            sa.Column("processo_docs", sa.LargeBinary())    
@@ -160,24 +183,6 @@ class InfraBanco:
             logger.critical("erro inesperado ao tentar criar tabelas", exc_info=True)
             raise
         
-# Excepcoes personalizadas do programa
-class EntityNotFoundError(Exception):
-    pass
-    
-class DuplicateError(Exception):
-    pass
-    
-class EmptyTableError(Exception):
-    pass
-    
-class PermissionDeniedError(Exception):
-    pass
-    
-class InvalidOtpError(Exception):
-    pass
-    
-class AttemptsExcedError(Exception):
-    pass
 
 
 #infra-estrutura do gerador
