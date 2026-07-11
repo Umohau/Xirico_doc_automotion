@@ -181,7 +181,56 @@ def test_check_unique_fail(repo, dados):
         res=repo.check_unique(dados)
     assert "identificacao" in str(e)
     
+
+
+def test_get_ADMs_sucess(repo, dados):
+    """
+    given:
+    a repository of operators with two ADM operators.
+
+    when:
+        `get_ADMs` is executed.
     
+    then:
+        it must return a list containing exactly the two emails corresponding to the two ADMs in the repository.
+    """
+    op1= {
+    'nome': 'umohau',
+    'identificacao': '8368972925',
+    'telefone': '8527038482',
+    'email': 'muhauhara35@gmail.com',
+    'endereco': 'moamba, mata7douro',
+    'senha': 'muhau333',
+    'ADM': True,
+    'ativo': True
+}
+    dados["ADM"]=True
+    #insere dois operadores como ADMs
+    repo.insert(dados)
+    repo.insert(op1)
+    
+    adms=repo.get_ADMs() #executa o metodo a testar
+    
+    assert len(adms)==2 
+    assert op1.get('email') and dados.get("email") in adms
+    
+
+def test_get_ADMs_empty(repo):
+    """
+    given:
+    a repository of operators with no ADMs.
+
+    when:
+        `get_ADMs` is executed.
+    
+    then:
+        it must return an empty list.
+    """
+    adms=repo.get_ADMs()
+    assert isinstance(adms, list)
+    assert len(adms)==0    
+            
+            
 def test_total_records(repo, dados):
     repo.insert(dados)
     assert repo.total_records ==1
