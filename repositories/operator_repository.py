@@ -248,7 +248,25 @@ Returns:
             res=conexao.execute(pegar_senha)
             senha= res.first()
             return senha[0]
+
+
+    def get_ADMs(self) -> list:
+        """
+        Fetch the emails of all ADMs in the system.
+
+        Returns:
+            list[str]: List of ADM emails.
         
+        Note:
+            Returns an empty list if there are no ADMs.
+        """
+        pegar_adm= sa.select(self.tabela.c.email).where(
+          self.tabela.c.ADM==True,
+          self.tabela.c.ativo==True)
+        with self.engine.begin() as conexao:
+              res=conexao.execute(pegar_adm)
+              return [ linha[0] for linha in res ]  
+                
                 
     def check_unique(self, dados:dict) -> bool:
         """
