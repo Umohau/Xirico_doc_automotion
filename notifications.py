@@ -9,6 +9,26 @@ logger=logging.getLogger(__name__)
 
 class NotificatorEmail:
     def __init__(self, repo:OperatorRepository):
+        """
+       Initialize the email notification service.
+
+        Loads email credentials from environment variables and establishes a
+        connection to the SMTP server using the yagmail library.
+        
+        Args:
+            repo (OperatorRepository): Operator repository used for querying
+                recipient (ADMs) lists.
+        
+        Raises:
+            CredentialsError: If the environment variables EMAIL or SENHA_EMAIL
+                are not set or are empty.
+            yagmail.YagConnectionError: If the connection to the SMTP server
+                fails.
+        
+        Environment Variables:
+            EMAIL (str): Email address used for sending.
+            SENHA_EMAIL (str): Email password or app token.
+        """
         self._repo=repo
         self._conta=os.getenv("EMAIL")
         self._senha_app=os.getenv("SENHA_EMAIL")
@@ -20,6 +40,17 @@ class NotificatorEmail:
         
         
     def notify_operator(self, destino, titulo, msg ):
+        """
+        Notify an operator via email.
+
+        Args:
+            destino (str): Email of the target operator.
+            titulo (str): Email subject.
+            msg (str): Message content.
+        
+        Returns:
+            None
+        """
         self._email.send(
             to=destino, 
             subject=titulo,
@@ -28,9 +59,22 @@ class NotificatorEmail:
         
                     
     def notify_ADM(self, titulo, msg):
-            adms=self._repo.get_ADMs()
-            self._email.send(
-                subject=titulo,
-                contents=msg,
-                bcc=adms
+        """
+        Notify all administrators via email.
+
+        Retrieves the list of administrator email addresses from the repository
+        and sends a message to all of them using blind carbon copy (BCC).
+        
+        Args:
+            titulo (str): Subject of the email to be sent.
+            msg (str): Message content in the email body.
+        
+        Returns:
+            None
+        """
+        adms=self._repo.get_ADMs()
+        self._email.send(
+              subject=titulo,
+              contents=msg,
+              bcc=adms
                 )
