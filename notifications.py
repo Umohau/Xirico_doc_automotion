@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 import logging
 import yagmail
-from Projeto_xirico.exc import CredentialsError, EntityNotFoundError
+from Projeto_xirico.exc import CredentialsError, EntityNotFoundError4d
 
 logger=logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ class NotificatorEmail:
        Initialize the email notification service.
 
         Loads email credentials from environment variables and establishes a
-        connection to the SMTP server using the yagmail library.
+        connection to the SMTP server using the yagmail library.😁
         
         Args:
             repo (OperatorRepository): Operator repository used for querying
@@ -71,6 +71,9 @@ class NotificatorEmail:
         
         Returns:
             None
+            
+        Raises:
+            EntityNotFoundError : if the system does not have ADM
         """
         adms=self._repo.get_ADMs()
         if len(adms)==0:
