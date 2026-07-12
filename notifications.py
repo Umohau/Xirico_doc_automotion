@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 import logging
 import yagmail
-from Projeto_xirico.exc import CredentialsError
+from Projeto_xirico.exc import CredentialsError, EntityNotFoundError
 
 logger=logging.getLogger(__name__)
 
@@ -73,6 +73,8 @@ class NotificatorEmail:
             None
         """
         adms=self._repo.get_ADMs()
+        if len(adms)==0:
+            raise EntityNotFoundError("nao foram encontrados ADMs no sistema")
         self._email.send(
               subject=titulo,
               contents=msg,
