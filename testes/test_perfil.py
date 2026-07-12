@@ -1,24 +1,20 @@
 import sys, os
-from unittest.mock import Mock
+from unittest.mock import Mock, PropertyMock
 import pytest
-# Adiciona o diretório pai ao sys.path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from exc import InvalidOtpError
-from perfil import Perfil
+from Projeto_xirico.exc import InvalidOtpError
+from Projeto_xirico.profile import Profile
 
-class TestPerfilCasoCerto:
-    sessao={
-        "id":1,
-         'nome': 'umohau',
-         'identificacao': '1000574675447A',
-         'telefone': '852703882',
-         'email': 'muhauhara3@gmail.com',
-         'endereco': 'moamba, matadouro',
-         'senha':'muhau333',
-         'ADM':False,
-         'ativo':True
-         }
+class TestPfile:
+    dados={'nome': 'umohau', 'identificacao': '83689772925', 'telefone': '852703882', 'email': 'muhauhara3@gmail.com', 'endereco': 'moamba, matadouro',
+'senha':'muhau333',
+'ADM':False, 'ativo':True}
+    
+    @pytest.fixture
+    def sessao(self):
+         mock=Mock()         
+         type(mock).id=PropertyMock(return_value=1)
+         return mock
          
     @pytest.fixture
     def mock_autenticador(self):
@@ -28,8 +24,12 @@ class TestPerfilCasoCerto:
         
     @pytest.fixture
     def mock_repo_operador(self):
+         dados2={'nome': 'umohau', 'identificacao': '83689772925', 'telefone': '852703882', 'email': 'muhauhara3@gmail.com', 'endereco': 'moamba, matadouro',
+'senha':'muhau333',
+'ADM':False, 'ativo':True}
          mock=Mock()
          mock.actualizar.return_value=1
+         mock.buscar_id.return_value=dados2
          return mock
          
     @pytest.fixture
@@ -38,8 +38,8 @@ class TestPerfilCasoCerto:
     
     
     @pytest.fixture
-    def perfil(self, mock_repo_operador, mock_autenticador, mock_auditoria):
-        return Perfil (self.sessao, mock_repo_operador, mock_autenticador, mock_auditoria)
+    def perfil(self,sessao,  mock_repo_operador, mock_autenticador, mock_auditoria):
+        return Profile (sessao, mock_repo_operador, mock_autenticador, mock_auditoria)
     
     
     def test_pegar_id(self, perfil):
@@ -47,23 +47,22 @@ class TestPerfilCasoCerto:
         
         
     def test_pegar_nome(self, perfil):
-        assert perfil.nome==self.sessao["nome"]
-        
+        assert perfil.nome== self.dados["nome"]
         
     def test_pegar_telefone(self, perfil):
-        assert perfil.telefone==self.sessao["telefone"]
+        assert perfil.telefone==self.dados["telefone"]
         
         
     def test_pegar_email(self, perfil):
-        assert perfil.email==self.sessao["email"]
+        assert perfil.email==self.dados["email"]
         
         
     def test_pegar_estado(self, perfil):
-        assert perfil.estado==self.sessao["ativo"]
+        assert perfil.estado==self.dados["ativo"]
         
         
     def test_adm(self, perfil):
-        assert perfil.ADM==self.sessao["ADM"]
+        assert perfil.ADM==self.dados["ADM"]
         
         
     def test_editar_nome(self, perfil, mock_auditoria, mock_repo_operador):
@@ -86,9 +85,9 @@ class TestPerfilCasoCerto:
         perfil.editar_nome("joao")
         mock_repo_operador.actualizar.assert_called_once()
         mock_auditoria.auditar.assert_called_once()
+        assert perfil._dados_cache==None
         
-        
-    def test_mudar_email(self, perfil, mock_autenticador, mock_repo_operador,mock_auditoria):
+    def test_mudar_email(self, perfil, sessao, mock_autenticador, mock_repo_operador,mock_auditoria):
         """
         Given:
              objeto perfil com metodo mudar_email.
@@ -113,9 +112,10 @@ class TestPerfilCasoCerto:
         #verifica se o metodo actualizar do 
         #repositorio foi chamado  com o id e o novo email
         mock_repo_operador.actualizar.assert_called_with(
-            self.sessao["id"], 
+            sessao.id,
             {"email": email})
         mock_auditoria.auditar.assert_called_once()
+        assert perfil._dados_cache==None
 
     def test_trocar_telefone(self, perfil, mock_repo_operador, mock_autenticador, mock_auditoria):
         """
@@ -145,9 +145,10 @@ class TestPerfilCasoCerto:
         mock_autenticador.verificar_otp.assert_called_once_with(codigo)
         mock_repo_operador.actualizar.assert_called_once()
         mock_auditoria.auditar.assert_called_once()
+        assert perfil._dados_cache==None
         
     
-    def test_mudar_email_otp_invalido(self ,perfil, mock_repo_operador, mock_autenticador):
+    def test_mudar_email_otp_invalido(self,perfil, mock_repo_operador, mock_autenticador):
         """
         Given: um objeto perfil com o metodo mudar_email.
         
