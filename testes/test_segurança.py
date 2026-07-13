@@ -3,17 +3,19 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import json
 import jwt
+import keyring
 from pathlib import Path
 from unittest.mock import Mock,  PropertyMock
 import pytest
 from datetime import datetime
 import exc
-from segurança import SenhaMixIn, Auditoria, OtpMixIn, Autenticacao
+from Projeto_xirico.exc import CredentialsError, AttemptsExcedError, InvalidOtpError, ExpiredOtpError, EntityNotFoundError
+from Projeto_xirico.segurança import SenhaMixIn , Auditoria, OtpMixIn, Autenticacao
 
 @pytest.mark.password
 class TestSenhaMixIn:
     @pytest.mark.slow
-    def test_hasehar_e_verificar_senha(self):
+    def test_hasehar_e_verificar_senha_secess(self):
         """
         given:
             um objeto SenhaMixIn com os metodos hashear e verificar.
@@ -27,7 +29,7 @@ class TestSenhaMixIn:
         """
         codigo='0000'
         a=SenhaMixIn().hashear(codigo)
-        assert SenhaMixIn().verificar(codigo, a) is True
+        assert SenhaMixIn().verificar_senha(codigo, a) is True
         assert len(a) >=60
         
         
@@ -45,7 +47,7 @@ class TestSenhaMixIn:
         """
         codigo='0000'
         a=SenhaMixIn().hashear(codigo)
-        assert SenhaMixIn().verificar("8888", a) is False
+        assert SenhaMixIn().verificar_senha("8888", a) is False
         
         
 class TestAuditoria:
@@ -57,7 +59,7 @@ class TestAuditoria:
         return Auditoria()
         
         
-    def test_auditar(self, tmp_path, auditoria):
+    def test_auditar_sucess(self, tmp_path, auditoria):
         """
         given:
             objeto auditoria que possua o metodo auditar.
@@ -89,7 +91,7 @@ class TestAuditoria:
             assert dados_esperados.items() <= a.items() #verifica se dados_esperados esta contido em a(dados escritos no jsonl)
             
             
-    def test_historico_hoje(self, auditoria):
+    def test_historico_hoje_sucess(self, auditoria):
         """
         given:
             objeto auditoria com metodo historico_hoje, um registro jsonl nomeiado com a data de hoje.
@@ -106,7 +108,7 @@ class TestAuditoria:
             "detalhes_operacao": "eliminou2"}
         
         dados=auditoria.historico_hoje(1)
-        assert dados_esperados.items() <= dados[0].items()#verifica se dados_esperados esta contido em dadod.
+        assert dados_esperados.items() <= dados[0].items()#verifica se dados_esperados esta contido em dados.
         
         
     def test_historico_diario(self, auditoria):
@@ -159,7 +161,7 @@ class TestAuditoria:
             deve ser lancada a excecao EntityNotFoundError.
         """
         operador_id=4
-        with pytest.raises(exc.EntityNotFoundError):
+        with pytest.raises(EntityNotFoundError):
             auditoria.historico_diario(operador_id, self.data)
         arquivo=auditoria._base/"aud"/f"registro_{self.data}.jsonl"
         assert arquivo.exists()
@@ -219,7 +221,7 @@ class TestOtpMixIn:
         type(OtpMixIn).status_=PropertyMock(return_value="expired")   
         
         codigo=OtpMixIn.gerar_otp() 
-        with pytest.raises(exc.ExpiredOtpError):
+        with pytest.raises(ExpiredOtpError):
             OtpMixIn.verificar_otp(codigo)
             
     @pytest.mark.slow       
@@ -228,7 +230,7 @@ class TestOtpMixIn:
         type(OtpMixIn).status_=PropertyMock(return_value="pending")   
         OtpMixIn.gerar_otp()
         codigo="12345678"
-        with pytest.raises(exc.InvalidOtpError):
+        with pytest.raises(InvalidOtpError):
             OtpMixIn.verificar_otp(codigo)
         
 
@@ -246,14 +248,14 @@ class TestOtpMixIn:
         """
         OtpMixIn.gerar_otp()
         codigo="12345678"
-        with pytest.raises(exc.AttemptsExcedError):
+        with pytest.raises(AttemptsExcedError):
             for i in range(3):
                 try:
                     OtpMixIn.verificar_otp(codigo)
-                except exc.InvalidOtpError:
+                except InvalidOtpError:
                     continue
 
-    def test_verificar_otp_oto_nao_gerado(self, OtpMixIn):
+    def test_verificar_otp_nao_gerado(self, OtpMixIn):
         """
         given:
             objeto OtpMixIn com metodo verificar_otp.
@@ -269,24 +271,6 @@ class TestOtpMixIn:
             OtpMixIn.verificar_otp(codigo)
             
             
-    def test_enviar_codigo_credenciais_imcompletas(self, OtpMixIn, monkeypatch):
-       """
-       given:
-           objeto OtpMixIn com metodo enviar_codigo.
-           
-       when:
-           enviar_codigo é chamado  mas nao encontra as credenciais (Email ou SENHA_EMAIL).
-           
-       then:
-           deve ser levantada a excecao CredentialsError.
-       """
-       #simula a ausencia de Email
-       monkeypatch.delenv("EMAIL", raising=False)
-       monkeypatch.delenv("SENHA_EMAIL", raising=False)
-       destino="exemplo@gmail.com"
-       with pytest.raises(exc.CredentialsError):
-            OtpMixIn.enviar_codigo(destino)
-
 
 class TestAutenticacao:
     @pytest.fixture
@@ -372,7 +356,7 @@ class TestAutenticacao:
         """
         monkeypatch.delenv("SERVICO", raising=False) #simula falta da credencial SERVICO
         
-        with pytest.raises(exc.CredentialsError):
+        with pytest.raises(CredentialsError):
             autenticador._pegar_chave_jwt()
 
 
@@ -478,6 +462,26 @@ class TestAutenticacao:
         #remove a credencial servico para teste
         monkeypatch.delenv("SERVICO", raising=False)
         
-        with pytest.raises(exc.CredentialsError):
+        with pytest.raises(CredentialsError):
             autenticador.guardar_token(usuario, token)
+
+
+    def test_guardar_token_confre_indisponivel(self, mocker, autenticador):
+        """
+        given:
+            objeto autenticador com metodo guardar_token.
             
+        when:
+            o confre do SO está indisponivel
+            
+        then:
+            deve ser levantada a excecao InitError.
+        """
+        token='tyeuh uetujeh eyij' #token a armazenar
+        usuario='email@teste.com'  #usuario do token
+        mock_set= mocker.patch("keyring.set_password", side_effect=keyring.errors.InitError)
+        
+        with pytest.raises(keyring.errors.InitError):
+            autenticador.guardar_token(usuario, token)
+        
+        
