@@ -6,27 +6,18 @@ import jwt
 import logging
 import secrets
 import keyring
-import yagmail
 import time
 from dotenv import load_dotenv
-from random import randint
 from pathlib import Path
 from keyrings.alt.file import PlaintextKeyring #para testes em desenvolvimento
 from datetime import datetime, timezone, timedelta
-from exc import AttemptsExcedError, InvalidOtpError, ExpiredOtpError, CredentialsError, EntityNotFoundError
+from Projeto_xirico.exc import AttemptsExcedError, InvalidOtpError, ExpiredOtpError, CredentialsError, EntityNotFoundError
 
 BASE= os.path.dirname(__file__)
 load_dotenv(BASE/Path("config.env")) #carrega o env com as definicoes
 
-#configura o logging
-log_level_str=os.getenv("LOG_LEVEL")
-log_level=getattr(logging, log_level_str)
+
 logger= logging.getLogger(__name__)
-logging.basicConfig(
-    format= "[%(levelname)s]: [%(name)s]: %(message)s: [%(asctime)s]",
-    datefmt="%H:%M",
-    level= log_level 
-    )
 
 if os.getenv("ENV") == "devolopment":
     keyring.set_keyring(PlaintextKeyring()) # para testes durante desenvolvimento
@@ -37,13 +28,13 @@ class SenhaMixIn:
     @staticmethod
     def hashear(senha: str) -> bytes:
         """
-        Cria um hash e salt da senha fornecoda no argumento senha.
-        
+        Create a salted hash of the password provided in the `senha` argument.
+
         Args:
-            senha(str): senha a ser hasheada.
-            
+            senha (str): Password to be hashed.
+        
         Returns:
-            bytes: retorna a senha hasheada e com salt em bytes.
+            bytes: The password hash with salt, as bytes.
         """
         pin= senha.encode("utf-8")
         senha_hasheada= bcrypt.hashpw(pin, bcrypt.gensalt())
@@ -51,17 +42,16 @@ class SenhaMixIn:
      
            
     @staticmethod
-    def verificar(senha: str, senha_armazenada: bytes)-> bool:
+    def verificar_senha(senha: str, senha_armazenada: bytes)-> bool:
         """
-        Extrai o salt e compara a senha fornecida no argumento senha com a armazenada (em hash).
-        
+        Extract the salt and compare the provided password in the `senha` argument with the stored hash.
+
         Args:
-            senha(str): senha a ser verificada.
-            
-            senha_armazenada(bytes): senha de comparacao(senha armazenada hasheada)
-            
+            senha (str): Password to be verified.
+            senha_armazenada (bytes): Comparison password (stored hashed password).
+        
         Returns:
-            bool: True se as senhas forem compativeis. False se nao compativeis
+            bool: True if the passwords match. False otherwise.
         """
         pin= senha.encode("utf-8")
         return bcrypt.checkpw(pin, senha_armazenada)
@@ -75,10 +65,10 @@ class Auditoria:
         
     def localizar_app(self):
         """
-        Obtem a base ou caminho onde o programa esta rodando
-        
+       Get the base directory or path where the program is running.
+
         Returns:
-            Path: o caminho absoluto onde o pregrama esta rodando em objeto Path
+        Path: The absolute path where the program is running, as a Path object.
         """
         if getattr(sys, 'frozen', False):
             return Path(sys.executable).parent
@@ -87,15 +77,15 @@ class Auditoria:
         
     def auditar(self, operador:int, operacao:str, detalhes='') -> None:
         """
-        Registra a operacao em logs com o id do operador a accao executada os detalhes da operacao e o timestamp em um arquivo jsonlines.
-        
+        Log the operation with the operator ID, executed action, operation details, and timestamp in a JSON Lines file.
+
         Args:
-            operador(int): id do operador que executa a operacao registrada.
-            operacao(str): nome da operacao que foi executada.
-            detalhes(str): detalhes da operacao executada.
-            
+            operador (int): ID of the operator performing the logged operation.
+            operacao (str): Name of the executed operation.
+            detalhes (str): Details of the executed operation.
+        
         Returns:
-            None    
+            None
         """
         dados= {
             "operador_id":operador,
@@ -114,15 +104,15 @@ class Auditoria:
                 registro.write("\n")
         
                 
-    def historico_hoje(self, operador_id):
+    def historico_hoje(self, operador_id)->list[dict]:
         """
-        Pega o historico da actual(hoje) de um operador escificado pelo id.
-        
+        Fetch today's operation history for a specified operator by ID.
+
         Args:
-            operador_id(int): id do operador alvo.
-            
+            operador_id (int): ID of the target operator.
+        
         Returns:
-            list[dict]: lista de dicionarios com os dados de cada operacao
+            list[dict]: A list of dictionaries containing the data for each operation.
         """
         historico=list()
         with open(self._arquivo, "r", encoding="utf-8") as arquivo:
@@ -136,19 +126,19 @@ class Auditoria:
 
     def historico_diario(self, operador_id,data:str ) -> list[dict] :
         """
-        Pega o historico de um operador numa data fornecida.
+        Retrieve the history of an operator for a provided date.
         
         Args:
-            operador_id(int): id do operador alvo.
-            data(str): data  da qual se pretende o historico.
-            
+            operador_id (int): ID of the target operator.
+            data (str): Date for which the history is requested.
+        
         Returns:
-            list[dic]: lista de dicionarios com os dados das operacoes do operador na data especificada.
-            Retorna lista vazia se nao tiver operacoes do operador.
-            
+            list[dict]: A list of dictionaries containing the operation data for the operator on the specified date.
+            Returns an empty list if the operator has no operations.
+        
         Raises:
-            FileNotFoundError: se nao houver arquivo de regustros da data fornecida.
-            EntityNotFoundError: se nao houver registros de operacoes do operador fornecido na data fornecida.
+            FileNotFoundError: If no log file exists for the provided date.
+            EntityNotFoundError: If no operation records are found for the provided operator on the given date.
         """
         historico=list()
         ficheiro= self._base/"aud"/f"registro_{data}.jsonl"
@@ -172,10 +162,10 @@ class OtpMixIn:
              
     def gerar_otp(self):
         """
-        Gera um otp de 8 digitos válido por 5 minutos,  armazena o hash do codigo na instancia.
-        
+        Generate an 8-digit OTP valid for 5 minutes, and store the code hash in the instance.
+
         Returns:
-            str: codigo de 8 digitos gerado
+            str: The generated 8-digit code.
         """
         logger.debug("gerando otp")
         self.__tentativas=0
@@ -200,24 +190,24 @@ class OtpMixIn:
 
     def verificar_otp(self, codigo: str) -> bool:
         """
-        Verifica se o otp fornecido pelo isuario é valido.
-        
+        Verify whether the OTP provided by the user is valid.
+
         Args:
-            codigo(str): otp fornecido pelo usuario.
-            
+            codigo (str): OTP provided by the user.
+        
         Returns:
-            True se o otp for valido(estiver correto).
-            
+            bool: True if the OTP is valid (matches correctly).
+        
         Raises:
-            ExpiredOtpError: se o otp estiver fora de validade(prazo de 5 minutos).
-            AttemptExcedError: se excerder o limite de tentativas(3 tentativas).
-            InvalidOtpError: se o otp estiver errado.
-            AttributeError: se nao tiver gerado um otp antes.
+            ExpiredOtpError: If the OTP has expired (5-minute validity period).
+            AttemptExcedError: If the attempt limit has been exceeded (3 attempts).
+            InvalidOtpError: If the OTP is incorrect.
+            AttributeError: If no OTP has been generated beforehand.
         """
-        logger.debug("verificando otp")
+        logger.debug("cheking otp")
         if self.status_ == "expired":
-             logger.debug("otp invalido")
-             raise ExpiredOtpError("codigo de validacao expirdo")
+             logger.debug("invalid otp")
+             raise ExpiredOtpError('Validation code expired.')
              
         compativel= bcrypt.checkpw(codigo.encode("utf-8"), self._otp.get("otp"))
         if compativel:
@@ -226,43 +216,15 @@ class OtpMixIn:
              logger.debug("otp valido")
              return compativel
         else:
-            logger.debug("codigo otp errado")
+            logger.debug('Incorrect OTP code.')
             self.__tentativas+=1
             if self.__tentativas >=3:
                 self._otp=None
-                raise AttemptsExcedError("limite de tentativas excedidas")
-            raise InvalidOtpError("otp invalido verifique-o. ")
+                raise AttemptsExcedError('Attempt limit exceeded.')
+            raise InvalidOtpError('Invalid OTP. Please check it.')
             
             
-    def enviar_codigo(self, destino:str) -> None:
-        """    
-        Envia o código OTP (One-Time Password) gerado para o e-mail do destinatário.
-
-    O método recupera as credenciais do remetente (e-mail e senha de aplicativo)
-    a partir das variáveis de ambiente. Caso as credenciais estejam ausentes,
-    uma exceção é lançada. O e-mail é enviado via SMTP utilizando a biblioteca
-    yagmail, contendo o OTP armazenado previamente no atributo `self._otp`.
-
-    Args:
-        destino (str): Endereço de e-mail do destinatário que receberá o código.
-
-    Raises:
-        CredentialsError: Se as variáveis de ambiente `EMAIL` ou `SENHA_EMAIL`
-            não estiverem definidas ou estiverem vazias.
-            """
-        conta=os.getenv("EMAIL")
-        senha_app=os.getenv("SENHA_EMAIL")
-        if not conta or not senha_app:
-            logger.critical("falha ao obter credenciais para envio de email")
-            raise CredentialsError("credenciais de email imcopletas")
-        logger.debug("enviando otp por email")
-        titulo="Codigo de verificacao"
-        corpo=f"{self._otp.get('otp')} é o seu codigo da xirico\n A xirico recomenda nao compartilhar este codigo com terceiros."
-        yag=yagmail.SMTP(conta, senha_app)
-        yag.send(destino, titulo, corpo)
-        logger.debug("sucesso: otp enviado")
-                                                  
-                
+    
 class Autenticacao(SenhaMixIn, OtpMixIn):
     def __init__(self):
         # chave de 32 bytes usada para assinar e descodificar o token.
@@ -270,39 +232,39 @@ class Autenticacao(SenhaMixIn, OtpMixIn):
     
     def _pegar_chave_jwt(self):
         """
-        Recupera a chave do token se já esxistir no  chaveiro do sitema operacional, caso nao exista cria um novo e o salva.
-        
+        Retrieve the token key from the system keychain if it already exists. If it does not exist, generate a new one and save it.
+
         Returns:
-            bytes: chave de 32 bytes.
-            
+            bytes: 32-byte key.
+        
         Raises:
-            CredentialsError: se as credencials servico e key estiverem imcompletas.
+            CredentialsError: If the service and key credentials are incomplete.
         """ 
         servico= os.getenv("SERVICO")
         key=os.getenv("KEY_JWT")
         if not servico or not key:
-            logger.critical("falha ao tentar recuperar ou criar chave_jwt . E: credenciais imcompletas")
-            raise CredentialsError("credenciais de chave de assinatura do token incompletas")
-        logger.debug("pegando chave_jwt")
+            logger.critical('Failed to retrieve or create JWT key: incomplete credentials.')
+            raise CredentialsError('Token signing key credentials incomplete.')
+        logger.debug('Fetching JWT key.')
         chave= keyring.get_password(servico, key)
         if not chave:
-            logger.debug("chave nao encontrada")
-            logger.debug("gerando nova chave unica")
+            logger.debug('Key not found.')
+            logger.debug('Generating new unique key.')
             chave= secrets.token_urlsafe(32)
             keyring.set_password(servico, key, chave)
-            logger.debug("sucesso: chave gerada e armazenada.")
+            logger.debug('Success: key generated and stored.')
         return chave
         
     def gerar_token(self, carga:dict) -> str:
         """
-        Gera um token de acesso para o usuario autenticado.
-        
+        Generate an access token for the authenticated user.
+
         Args:
-            carga(dict): dicionario com os dados a serem carregados no Token:
-                id do operador, ADM, nome do operador, email, telefone, estado
-            
+            carga (dict): Dictionary containing the data to be loaded into the token:
+                operator ID, ADM status, operator name, email, phone, and status.
+        
         Returns:
-            str: o token gerado
+            str: The generated token.
         """
         #define a emissao e o prazo para o token
         IAT=int(time.time())
@@ -310,90 +272,91 @@ class Autenticacao(SenhaMixIn, OtpMixIn):
         carga["iat"]=IAT
         carga["exp"]=EXP
         
-        logger.debug("gerando token")
+        logger.debug('Generating token.')
         token_gerado= jwt.encode(carga, self._chave_jwt, algorithm="HS256")
-        logger.debug("sucesso: token gerado")
+        logger.debug('Success: token generated.')
         return token_gerado
 
 
     def descodificar_token(self,token:str) -> dict:
         """
-        Descodifica o token  fornecido.
-        
+        Decode the provided token.
+
         Args:
-            token(str): token a descodificar.
-            
+            token (str): Token to be decoded.
+        
         Returns:
-            dict: dicionario com os dados do token.
-            
+            dict: Dictionary containing the token data.
+        
         Raises:
-            InvalidSignatureError: se a assinatura do token (chave_jwt), estiver errada.
-            ExpiredSignatureError: se o token tiver expirdo.
+            InvalidSignatureError: If the token signature (JWT key) is invalid.
+            ExpiredSignatureError: If the token has expired.
         """
         try:
-            logger.debug("descodificando token")
+            logger.debug('Decoding token.')
             return jwt.decode(token, self._chave_jwt, algorithms=["HS256"])
         except jwt.exceptions.InvalidTokenError as e:
-            logger.warning("token invalido, E:%s", str(e))
+            logger.warning('Invalid token, E: %s',str(e))
             raise  
             
             
     def guardar_token(self, nome_usuario:str, token: str ) -> None:
         """
-        Armazena o token  de forma segura  no gerenciador de senhas do sistema operacional usando  biblioteca keyring.
-        
+        Securely store the token in the operating system's password manager using the keyring library.
+
         Args:
-            nome_usuario(str): nome do usuario do token(recomenda-se utilizar o email para garantir que seja unico.
-            token(str): token a ser armazenado.
-            
+            nome_usuario (str): Username for the token (it is recommended to use the email address to ensure uniqueness).
+            token (str): Token to be stored.
+        
         Returns:
             None
-            
+        
         Raises:
-            InitError: se o chaveiro estiver indisponivel.
-            PasswordSetError: se nao for possivel armazenar o token no chaveiro.
-            CredentialsError: se a variavel SERVICO nao estiver definida ou for None no env
+            InitError: If the keyring is unavailable.
+            PasswordSetError: If the token cannot be stored in the keyring.
+            CredentialsError: If the SERVICO environment variable is not set or is None.
         """
         servico=os.getenv("SERVICO")
         if not servico:
-            logger.critical("credencial nao encontrada (servico)")
-            raise CredentialsError("falha a recuperar a credencial <servico>")
+            logger.critical('Failed to retrieve credential <service>')
+            raise CredentialsError('Failed to retrieve credential <service>')
         try:
-            logger.debug("salvando token")
+            logger.debug('Saving token.')
             keyring.set_password(servico, nome_usuario, token)
-            logger.debug("sucesso: token salvo")
+            logger.debug('Success: token saved.')
             return None
         except keyring.errors.InitError as e:
-            logger.error("erro: falha ao guardar token chaveiro indisponivel-----Erro: %s", str(e))
+            logger.error('Error: failed to save token - keyring unavailable. Error: %s', str(e))
             raise
         except keyring.errors.PasswordSetError as e:
-            logger.error("erro: falha ao guardar token-----Erro: %s", str(e))
+            logger.error('Error: failed to save token - keyring unavailable. Error: %s', str(e))
             raise
             
             
     def pegar_token(self, nome_usuario:str) -> str:
         """
-        Recupera o token armazenado no gestor de senhas do sistema.
-        
+        Retrieve the token stored in the system's password manager.
+
         Args:
-            nome_usuario(str): nome do usuario do token a ser recuperado.
-            
+            nome_usuario (str): Username of the token to be retrieved.
+        
         Returns:
-            str:o token recuperado do gestor de senhas.
-            
+            str: The token retrieved from the password manager.
+        
         Raises:
-            InitError: se o gestor de senhas estiver indisponivel.
-            PasswordGetError: se falhar ao acessar o token.
+            InitError: If the password manager is unavailable.
+            PasswordGetError: If access to the token fails.
             
         """
+        servico=os.getenv("SERVICO")
         try:
-            logger.debug("caregndo token")
-            return keyring.get_password("servico_xirico", nome_usuario)
+            logger.debug('Loading token.')
+            return keyring.get_password(servico, nome_usuario)
         except keyring.errors.InitError as e:
-            logger.error("erro: falha ao pegar token. chaveiro indisponivel-----Erro: %s", str(e))
+            logger.error('Error: failed to get token - keyring unavailable. Error: %s', str(e))
             raise
         except keyring.errors.PasswordGetError as e:
-            logger.error("erro: falha ao pegar token.falha no acesso-----Erro: %s", str(e))
+            logger.error('Error: failed to get token - access failed. Error: %s', str(e))
             raise
 
     
