@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from Projeto_xirico.segurança import Autententicacao,  Auditoria
     from Projeto_xirico.profile import Profile
     from Projeto_xirico.notifications import     NotificatorEmail
-    from Projeto_xirico.schemes.operator_scheme import dados:OperatorRegist
+    from Projeto_xirico.schemes.operator_scheme import OperatorRegist
     
     
 
@@ -24,7 +24,7 @@ class RegistNewOperator:
         notificator: NotificatorEmail,
         profile: Profile,
         audit: Auditoria
-        )
+        ):
         self._repo= repo
         self._auth= auth
         self._notificator= notificator
@@ -34,21 +34,41 @@ class RegistNewOperator:
         
     def execute(dados:OperatorRegist, otp: str):
         """
-        Registra um novo operador no sitema.
+           
+        Registers a new operator in the system.
+    
+        This method performs the complete registration workflow:
+        1. Verifies that the current operator has ADMIN privileges.
+        2. Ensures that the provided operator data (email, username, etc.) are unique.
+        3. Validates the one‑time password (OTP) sent to the new operator's email.
+        4. Persists the new operator record in the repository.
+        5. Logs the operation in the audit trail.
+        6. Sends a welcome email to the new operator (non‑critical; failures are logged).
+    
         Args:
-            dados: dados do novo operador a registrar
-            otp: codigo de 8 digitos enviado ao novo operador por email para confirmar identidade.
+            dados (OperatorRegist): Pydantic model containing the new operator's data
+                (e.g., name, email, username, role, etc.).
+            otp (str): 8‑digit code previously emailed to the new operator for identity
+                verification.
+    
         Returns:
-            id do operador recem registrado
-            
+            int: The unique identifier (ID) assigned to the newly registered operator.
+    
         Raises:
-            PermissionDeniedError: se operador nao for ADM
-            DuplicateError: se o os dados do novo operador, ja estiverem cadastrados
-            InvalidOtpError:se o otp estiver errado.
-            ExpiredOtpError: se o otp estiver expirado
-            AttemptsExcededError: se exceder 3 tentativas(passar o otp errado 3 vezes)
-            
-        Note: A maioria das excecoes sao levantadas pelos proprios metodos de verificacao.
+            PermissionDeniedError: If the current operator is not an ADMIN.
+            DuplicateError: If any of the provided data (email/username) already exists.
+            InvalidOtpError: If the OTP does not match the expected value.
+            ExpiredOtpError: If the OTP has expired (time window exceeded).
+            AttemptsExcededError: If the OTP has been entered incorrectly more than
+                the allowed number of times.
+    
+        Notes:
+            - The OTP verification and uniqueness checks are delegated to the `auth`
+              and `repo` dependencies, which raise the appropriate exceptions.
+            - Email notification failures are caught and logged as warnings; they do
+              not block the registration process.
+            - All operations are audited for traceability.
+    
         """
         dados_=dados.model_dump()
         if not self._profile.ADM:
