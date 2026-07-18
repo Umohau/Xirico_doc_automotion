@@ -1,6 +1,8 @@
 import sqlalchemy as sa
 from typing import optional
+import logging
 
+logger= logging.getLogger(__name__)
 
 class messageBoxRepository:
     def __init__(self, conector):
