@@ -175,6 +175,19 @@ class InfraData:
            sa.Column('order_id', sa.Integer, sa.ForeignKey("orders.order_id"), nullable=False, index=True),
            sa.Column("processo_docs", sa.LargeBinary())    
         )
+        
+       self.messageBox = sa.Table(
+       'messageBox',
+        self.metadata,
+        sa.Column('message_id', sa.Integer, primary_key=True),  
+        sa.Column('channel', sa.String(10), nullable=False, index=True),  
+        sa.Column('title', sa.String(), nullable=False),  
+        sa.Column('message', sa.String()),
+        sa.Column('anex', sa.LargeBinary()),
+        sa.Column('retry', sa.Integer(), index=True),
+        sa.Column('status', sa.String(), nullable=False, default='pending', index=True)
+)
+            
          
         try:
             self.metadata.create_all(self.engine)
