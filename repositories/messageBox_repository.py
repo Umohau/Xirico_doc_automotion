@@ -1,4 +1,6 @@
-from Projeto_xirico.interfaces.repository_interfaces import BaseRepository
+import sqlalchemy as sa
+from typing import optional
+
 
 class messageBoxRepository:
     def __init__(self, conector):
