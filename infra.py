@@ -176,17 +176,17 @@ class InfraData:
            sa.Column("processo_docs", sa.LargeBinary())    
         )
         
-       self.messageBox = sa.Table(
-       'messageBox',
-        self.metadata,
-        sa.Column('message_id', sa.Integer, primary_key=True),  
-        sa.Column('channel', sa.String(10), nullable=False, index=True),  
-        sa.Column('title', sa.String(), nullable=False),  
-        sa.Column('message', sa.String()),
-        sa.Column('anex', sa.LargeBinary()),
-        sa.Column('retry', sa.Integer(), index=True),
-        sa.Column('status', sa.String(), nullable=False, default='pending', index=True)
-)
+        self.messageBox = sa.Table(
+           'messageBox',
+            self.metadata,
+            sa.Column('message_id', sa.Integer, primary_key=True),  
+            sa.Column('channel', sa.String(10), nullable=False, index=True),  
+            sa.Column('type', sa.String(), nullable=False, index= True),
+            sa.Column('to', sa.String(), nullable=False),
+            sa.Column('name', sa.String(), nullable=False),
+            sa.Column('retry', sa.Integer(), index=True, default=0),
+            sa.Column('status', sa.String(), nullable=False, default='pending', index=True)
+    )
             
          
         try:
