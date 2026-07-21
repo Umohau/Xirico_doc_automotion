@@ -21,13 +21,13 @@ class RegistNewOperator:
         self,
         repo: OperatorRepository,
         auth:Autententicacao,
-        notificator: NotificatorEmail,
+        message_box:m essageBoxRepository,
         profile: Profile,
         audit: Auditoria
         ):
         self._repo= repo
         self._auth= auth
-        self._notificator= notificator
+        self._message_box= message_box
         self._profile= profile
         self._audit= audit
         
@@ -80,14 +80,13 @@ class RegistNewOperator:
             operador= self._profile.id,
             operacao= "regist new operator",
             detalhes= f"registou  um operador com o id {id_gerado}")
-        try:
-        self._notificator.notify_operator(
-            destino= dados.email,
-            titulo= "Bem vindo(a)",
-            msg= "seu registro como operador na xirico foi efectuado com sucesso.\nAcesse a sua conta e comece a operar")
-        except CredentialsError:
-            pass
-        except Exception as e:
-            logger.warning("falha no envio de email", exc_info=True)
+        #adiciona uma mensagem de boas vindas na caixa para posterior envio
+        self._message_box.add_(
+            dados={
+                "to":dados.email,
+                "type":'welcome',
+                "name": dados.nome,
+                "channel": 'email'
+               } )
         return id_gerado
         
