@@ -1,37 +1,46 @@
-class DisebleOperatorByID:
+from __future__ import annotations
+from typing import TYPE_CHECKING
+from Projeto_xirico.exc import PermissionDeniedError
+
+
+if TYPE_CHECKING:
+    from Projeto_xirico.repositories.operator_repository import OperatorRepository, messageBox_repository
+    from Projeto_xirico.segurança import Autententicacao,  Auditoria
+    from Projeto_xirico.profile import Profile
+
+
+class DisableOperatorByID:
      def __init__(
         self,
         repo: OperatorRepository,
-        auth:Autententicacao,
-        notificator: NotificatorEmail,
+        message_box: messageBoxRepository,
         profile: Profile,
         audit: Auditoria
         ):
         self._repo= repo
-        self._auth= auth
-        self._notificator= notificator
+        self._message_box= message_box
         self._profile= profile
         self._audit= audit
         
         
-    def execute(id: int, otp: str) -> int:
+    def execute(self, id: int) -> int:
         if not self._profile.ADM:
             raise PermissionDeniedError("nao ADMs nao podem desativar_operadores")
         
-        self._auth.verificar_otp(otp) #verifica se o codigo otp é valido
-        email= self._repo.search_id(id).get('email')
-        self._repo.delete(id)
-        try:
-            self._notificator.notify_operator(
-                destino= email,
-                titulo="Desativacao de conta",
-                msg='sua conta de operador na xirico foi desactivada. Se nao esta a par da accao, entre em contacto com o sector administrativo pelos contactos abaixo.')
-        except CredentialsError:
-            pass
-        except Exception as e:
-            logger.warning("falha no envio de email", exc_info=True)
-            
+        operador= self._repo.search_id(id)
+        #executa e armazena o numero de deletados
+        efeito= self._repo.delete(id) 
+        #audita a accao
         self._audit(
             operador= self._profile.id,
             operacao= "disable operator",
-            detalhes= 'desativou o operador id {id}')
+            detalhes= f'desativou o operador id {id}')
+        #adiciona uma mensagem de notificacao na caixa para envio
+        self._message_box.add_(
+            dados={
+                "to": operador.get('email'),
+                "type": 'Disable',
+                "name": operador.get('nome'),
+                "channel": 'email'
+               } )
+        return efeito
