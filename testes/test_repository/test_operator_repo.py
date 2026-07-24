@@ -99,7 +99,7 @@ def test_reactivate_sucess(repo, dados):
     recup=repo.reactivate(id)
     operador= repo.search_id(id)
     
-    assert recup is True
+    assert recup == 1
     assert all(item in operador.items() for item in  dados.items())        
     
         
