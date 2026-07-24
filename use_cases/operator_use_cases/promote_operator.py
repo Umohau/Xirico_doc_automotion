@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from Projeto_xirico.exc import PermissionDeniedError
-import logging
 
 
 if TYPE_CHECKING:
@@ -28,9 +27,11 @@ class PromoteOperator:
         #verifica se o operdor em sessao é ADM
         if not self._profile.ADM:
             raise PermissionDeniedError('nao ADMs nao podem promover operadores')
-        operador= repo.search_id(id)# revupera os dados do operador a promover
-        affect= self._repo.update(
-            dados={"ADM": True})# executa a promocao
+        operador= self._repo.search_id(id)# revupera os dados do operador a promover
+        effect= self._repo.update(
+            dados={"ADM": True},
+            id
+         )# executa a promocao
         #audita a accao
         self._audit.auditar(
             operador= id,
