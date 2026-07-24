@@ -14,7 +14,7 @@ class OperatorRepository(BaseRepository):
             raise RuntimeError("""Operators table not found in metadata.
 Ensure that the same Connector object is used in both the InfraData and the OperatorsRepository class.""")
         self.tabela= self.metadata.tables["operators"]
-    
+  
     
     def insert(self, dados:dict) ->int:
         '''
@@ -101,19 +101,23 @@ Ensure that the same Connector object is used in both the InfraData and the Oper
         """
        Reactivate the operator by setting the `active` field to `True`.
 
-Args:
-    id (int): ID of the operator to reactivate.
-
-Returns:
-    bool: True if reactivated.
+        Args:
+            id (int): ID of the operator to reactivate.
+        
+        Returns:
+            bool: True if reactivated.
+        
+        Raises:
+            EntityNotFoundError: if target operator not found.
         """   
         reactivar= self.tabela.update().values(ativo=True).where(self.tabela.c.id==id)
         
         with self.engine.begin() as conexao:
             res=conexao.execute(reactivar)
-            if res.rowcount:
-                return True
-                                                       
+            effect=res.rowcount
+            if not effect:
+                raise EntityNotFoundError("No inactive operator found for the provided email.")
+            return effect              
                                                         
         
     def search_id(self, id:int) -> dict:
