@@ -1,17 +1,17 @@
 from __future__ import annotations
-import abc
+import sqlalchemy as sa
 from typing import TYPE_CHECKING
+from Projeto_xirico.exc import EntityNotFoundError, EmptyTableError
 if TYPE_CHECKING:
     from Projeto_xirico.infra import Conector
 
-class RepositoryInterface(abc.ABC):
+class BaseRepository:
 
     def __init__(self,conector:Conector):
-        self._engine=conector.engine
-        self._metadata=conector.metadata
+        self.engine=conector.engine
+        self.metadata=conector.metadata
       
         
-    @abc.abstractmethod
     def insert(self, dados:dict):
         """
         Recebe um dicionario de dados e adiciona ao repositorio.
@@ -25,7 +25,7 @@ class RepositoryInterface(abc.ABC):
                 id=resultado.inserted_primary_key[0]
                 return id
                         
-    @abc.abstractmethod
+    
     def delete(self, id):
         """
         elimina um dados do repositorio pelo id
@@ -36,12 +36,11 @@ class RepositoryInterface(abc.ABC):
             resultado=conexao.execute(desativar).rowcount
             if resultado:
                 return resultado
-            logger.warning("falha ao desativar alvo nao encontrado ou já inativo")
             raise EntityNotFoundError('Alvo nao encontrado')
     
     
      
-    @abc.abstractmethod  
+    
     def  update(self, dados:dict,  id:int=None, email:str=None) -> int:
         """
         Actualiza os dados atraves do id 
@@ -63,7 +62,7 @@ class RepositoryInterface(abc.ABC):
             return list(dados.keys())
     
     
-    @abc.abstractmethod   
+    
     def search_id(self, id:int) -> dict:
          """
          busca os dados de um repositorio filtrando pelo id .
@@ -76,7 +75,7 @@ class RepositoryInterface(abc.ABC):
                 raise EntityNotFoundError("Alvo nao encontrado para o id fornecido")
             return res._asdict()
          
-    @abc.abstractmethod
+    
     def search_all(self) -> list[dict]:
         """
         Busca todos os dados do reposirorio e ordena pelo id
@@ -94,7 +93,7 @@ class RepositoryInterface(abc.ABC):
                 
         
           
-    @abc.abstractmethod
+    
     def search_name(self, nome:str) -> list[dict]:
         """
         Faz uma busca parcial do texto fornecido retornando tudo que tenha ou paressa com o texto.
@@ -114,10 +113,9 @@ class RepositoryInterface(abc.ABC):
             return dados
         
         
-    @property   
-    @abc.abstractmethod
+    @property
     def total_records(self) -> int:
         with self.engine.begin() as conexao:
             pegar_tot=sa.select(sa.func.count(self.tabela.c.id)).where(self.tabela.c.ativo==True)
-            total= conexao.execute(pegar_tot.scalar())
+            total= conexao.execute(pegar_tot).scalar()
             return total
