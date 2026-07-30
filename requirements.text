@@ -1,0 +1,9 @@
+docxtpl>=0.16.0
+sqlalchemy>=2.0.0
+python-dotenv>=1.0.0
+yagmail>=0.15.293
+bcrypt>=4.0.0
+PyJWT>=2.0.0
+keyring>=24.0.0
+keyrings.alt>=5.0.0
+pydantic>=2.0.0
