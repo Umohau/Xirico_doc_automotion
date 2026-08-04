@@ -24,3 +24,11 @@ class EntityNotFoundError(Exception):
         
 class IdentificatorError(Exception):
     pass
+
+
+class PermissionDeniedError(Exception):
+    pass
+
+
+class CredentialsError(Exception):
+    pass
