@@ -31,7 +31,7 @@ Ensure that the same Connector object is used in both the InfraData and the Bird
         """
         try:
             return super().insert(dados)
-        except DuplicateError as e:
+        except sa.exc.IntegrityError as e:
             logger.warning('Attempt to insert an already existing bird.')
             raise DuplicateError('Bird with provided data already exists') from e
 

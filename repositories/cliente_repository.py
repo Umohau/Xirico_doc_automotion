@@ -32,7 +32,7 @@ Ensure that the same Connector object is used in both the InfraData and the Clie
         try:
             return super().insert(dados)
       
-        except DuplicateError:
+        except sa.exc.IntegrityError:
                 logger.warning('Attempt to insert an already existing client.')
                 raise DuplicateError('Client already exists with the provided data')
 
