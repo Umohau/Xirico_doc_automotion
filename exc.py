@@ -32,3 +32,10 @@ class PermissionDeniedError(Exception):
 
 class CredentialsError(Exception):
     pass
+
+
+class AttemptsExcedError(Exception):
+    pass
+
+class ExpiredOtpError(Exception):
+    pass
