@@ -28,8 +28,9 @@ class DemoteOperator:
             raise PermissionDeniedError("nao ADMs nao podem rebaixar operadores")
         operador= self._repo.search_id(id)
         effect= self._repo.update(
-            dados={"ADM":False},
-            id)
+            id,
+            dados={"ADM":False}
+            )
         self._audit.auditar(
             operador= self._profile.id,
             operacao= "demote operator",

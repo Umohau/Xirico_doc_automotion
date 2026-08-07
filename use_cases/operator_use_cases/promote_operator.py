@@ -29,8 +29,9 @@ class PromoteOperator:
             raise PermissionDeniedError('nao ADMs nao podem promover operadores')
         operador= self._repo.search_id(id)# revupera os dados do operador a promover
         effect= self._repo.update(
-            dados={"ADM": True},
-            id
+            id,
+            dados={"ADM": True}
+            
          )# executa a promocao
         #audita a accao
         self._audit.auditar(

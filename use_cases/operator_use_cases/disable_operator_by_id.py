@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class DisableOperatorByID:
-     def __init__(
+    def __init__(
         self,
         repo: OperatorRepository,
         message_box: messageBoxRepository,
@@ -31,7 +31,7 @@ class DisableOperatorByID:
         #executa e armazena o numero de deletados
         efeito= self._repo.delete(id) 
         #audita a accao
-        self._audit(
+        self._audit.auditar(
             operador= self._profile.id,
             operacao= "disable operator",
             detalhes= f'desativou o operador id {id}')

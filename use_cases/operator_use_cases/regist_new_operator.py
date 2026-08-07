@@ -21,7 +21,7 @@ class RegistNewOperator:
         self,
         repo: OperatorRepository,
         auth:Autententicacao,
-        message_box:m essageBoxRepository,
+        message_box: messageBoxRepository,
         profile: Profile,
         audit: Auditoria
         ):
@@ -32,7 +32,7 @@ class RegistNewOperator:
         self._audit= audit
         
         
-    def execute(dados:OperatorRegist, otp: str):
+    def execute(self, dados:OperatorRegist, otp: str):
         """
            
         Registers a new operator in the system.
