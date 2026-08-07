@@ -21,7 +21,7 @@ def test_disable_operator_by_id_sucess(
 ):
     id=1
     disable_operator_by_id.execute(id)
-    mock_repo.search_id.assert_called_once()
+    mock_repo.search_id.assert_called_once_with(id)
     mock_repo.delete.assert_called_once_with(id)
     mock_audit.auditar.assert_called_once()
     mock_message_box.add_.assert_called_once()
