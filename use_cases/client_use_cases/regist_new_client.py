@@ -18,6 +18,7 @@ class RegistNEwClient:
 
 
     def execute(self, dados: dict) -> int:
+        self._repo.check_unique(dados)
         id_gerado= self._repo.insert(dados)
         self._audit.auditar(
             operador= self._profile.id,

@@ -13,7 +13,7 @@ class RecoveryClient:
             profile: Profile,
             audit: Auditoria
         ):
-        self._repo= self._repo
+        self._repo= repo
         self._profile= profile
         self._audit= audit
 

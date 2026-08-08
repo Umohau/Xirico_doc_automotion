@@ -15,12 +15,12 @@ class ClientUpdateAdressById:
         ):
         self._repo= repo
         self._profile= profile
-        self.audit= audit
+        self._audit= audit
 
 
     def execute(self, client_id:int, adress: dict) -> int:
         effect= self._repo.update(dados= adress, id= client_id)
-        self.audit.auditar(
+        self._audit.auditar(
             operador= self._profile.id,
             operacao= 'client_update_adress_by_id',
             detalhes= f'actualizou o endereço do cliente com id {client_id}'

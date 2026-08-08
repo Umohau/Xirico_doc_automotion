@@ -6,14 +6,14 @@ if TYPE_CHECKING:
     from Projeto_xirico.seguranca import Auditoria
 
 
-class DeleteOperatorById:
+class DeleteClientById:
     def __init__(
             self,
             repo: ClientRepository,
             profile: Profile,
             audit: Auditoria
         ):
-        self._repo= self._repo
+        self._repo= repo
         self._profile= profile
         self._audit= audit
 
