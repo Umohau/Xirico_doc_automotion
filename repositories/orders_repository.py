@@ -68,12 +68,12 @@ object in both the InfraData and the OrdersRepository class.""")
             raise ProtectedEntityError("Cannot delete completed order.") from e
             
             
-    def update(self,order_id: int, novos_dados: dict) -> int:
+    def update(self,order_id: str, novos_dados: dict) -> int:
         """
        Update order data by replacing the fields with the new data provided in the `novos_dados` argument.
 
         Args:
-            order_id (int): ID of the target order.
+            order_id (str): ID of the target order.
             novos_dados (dict): Dictionary containing the new data.
         
         Returns:
