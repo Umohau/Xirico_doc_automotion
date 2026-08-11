@@ -21,15 +21,15 @@ Make sure to use the
         """
         Insert data for a new completed export.
 
-    Args:
-        dados (dict): Data for the new export.
-    
-    Returns:
-        int: ID of the newly completed export.
-    
-    Raises:
-        IntegrityError: If any foreign key is invalid.
+        Args:
+            dados (dict): Data for the new export.
         
+        Returns:
+            int: ID of the newly completed export.
+        
+        Raises:
+            IntegrityError: If any foreign key is invalid.
+            
         """
         inserir= self.tabela.insert()
         
@@ -42,7 +42,7 @@ Make sure to use the
                 raise
 
 
-    def update(self, dados:dict, expo_id) -> list:
+    def update(self, dados:dict, expo_id: int) -> list:
         actualizar=self.tabela.update().where(self.tabela.c.exportacao_id== expo_id)
         actualizar=actualizar.values(dados)
         
@@ -56,7 +56,7 @@ Make sure to use the
 
     def search_epoc(self, data_inicio, data_fim) -> list[dict]:
         """
-       Search for exports within the provided time interval (date).
+        Search for exports within the provided time interval (date).
 
         Args:
             data_inicio (date): Start date from which the search begins.
@@ -173,7 +173,7 @@ Make sure to use the
   
     def get_shipments_gid(self, operador_id):
         """
-       Fetch all exports managed by the operator provided in `operador_id`.
+        Fetch all exports managed by the operator provided in `operador_id`.
 
         Args:
             operador_id (int): ID of the target operator.
