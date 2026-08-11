@@ -1,0 +1,100 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+import logging
+from Projeto_xirico.exc import PermissionDeniedError, ProtectedEntityError
+if TYPE_CHECKING:
+    from Projeto_xirico.repositories.orders_repository import OrdersRepository
+    from Projeto_xirico.repositories.operator_repository import OperatorRepository
+    from Projeto_xirico.repositories.message_box_repository import messageBoxRepository
+    from Projeto_xirico.Profile import Profile
+    from Projeto_xirico.seguranca import Auditoria, Autenticacao
+
+
+logger= logging.getLogger(__name__)
+
+
+class ChangeOrderMenager:
+    def __init__(self,
+        repo: OrdersRepository,
+        profile: Profile,
+        audit: Auditoria,
+        message_box: messageBoxRepository,
+        operator: OperatorRepository,
+        auth: Autenticacao
+    ):
+        self._repo= repo
+        self._profile= profile
+        self._audit= audit
+        self._message_box= message_box
+        self._operator= operator
+        self._auth= auth
+
+
+    def execute(self, order_id: str, new_menager_id: dict, codigo: str):
+        #recupera os dados do pedido
+        logger.debug('recuperando os dados do pedido')
+        order= self._repo.get_order_oid(order_id) #recupera os dados do pedido
+        order_menager= order.get("gestor_id") #recupera o id do gestor do pedido
+        operator_id= self._profile.id #guarda o id do operador logado
+        order_status= order.get('estado') #guarda o estado do pedido
+
+        #verifica a permissao para liberar edicao do pedido
+        logger.debug('process: verificando permicao')
+        if not order_menager == operator_id and not self._profile.ADM:
+            logger.warnig('permissao negada ao operador: %s para trocar o gestor do pedido %s',operator_id, order_id)
+            raise PermissionDeniedError('sem permissao para editar este pedido, somente leitura!')
+        self._auth.verificar_otp(codigo) # confirma a identidade do novo gestor
+
+        #verifica o estado do pedido para liberar a edicao
+        logger.debug('process: verificando estado do pedido')
+        if order_status== 'concluido': 
+            logger.warnig('entidate protegida, accao barada ao operador: %s pedidos concluidos nao podem ser editados id: %s',operator_id, order_id)
+            raise ProtectedEntityError('pedidos concluidos nao podem ser editados, somente leitura!')
+        elif order_status == 'pendente':
+            logger.debug('actualizando pedido %s', order_id)
+            effect= self._repo.update(order_id= order_id, novos_dados= new_menager_id) #executa a actualizacao
+            logger.info('gestor do pedido: %s alterado com sucesso', order_id)
+        elif order_status== 'cancelado':
+            logger.warning('entidade projegida accao barrada. nao é possivel editar um pedido cancelado id: %s', order_id)
+            raise ProtectedEntityError('pedidos cancelados nao podem ser editados somente leitura!')
+
+        #registra a accao em log de auditoria
+        logger.debug('process: auditando a accao')
+        self._audit.auditar(
+            operador= operator_id,
+            operacao= 'change_order_menager',
+            detalhes= f'''alterou o gestor do pedido: {order_id}
+                            de: {order_menager}
+                            para: {new_menager_id.get("gestor_id")}'''
+        )
+
+        #recupera os emails do gestor actual e do novo gestor
+        menager= self._operator.search_id(order_menager)
+        new_menager= self._operator.search_id(new_menager_id.get("gestor_id"))
+
+        #enfileira uma notificacao para o gestor anterior e o novo gestor
+        logger.debug('enfileirando emails de notificacao para os gestores')
+        try:
+            self._message_box.add_(
+                dados={
+                    'to': menager.get('email'),
+                    'type': 'sec_notificatioin',
+                    'name': menager.get('nome'),
+                    'channel': 'email',
+
+                }
+            )
+
+            self._message_box.add_(
+                dados={
+                    'to': new_menager.get('email'),
+                    'type': 'sec_notification',
+                    'name': new_menager.get('nome'),
+                    'channel': 'email'
+                }
+            )
+        except Exception:
+            logger.warning('falha no enfileiramento dos emails para os gestores', exc_info=True)
+
+        logger.debug('operacao de actualizacao concluida com sucesso')
+        return effect
