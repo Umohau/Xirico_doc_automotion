@@ -1,34 +1,35 @@
 import dataclasses
+from datetime import date
 
 @dataclasses.dataclass
 class DoneOrdersGetResponse:
     order_id: str
-    date_of_regist: str
-    sent_date: str
+    date_of_regist: date
+    sent_date: date
     manager: int
     client: int
     quantity: int
     bird: str
-    status: str= 'Concluido'
+    status: str= 'Done'
 
 
 @dataclasses.dataclass
 class PendingOrdersGetResponse:
     order_id: str
-    data_do_entrada: str
-    gestor: int
-    cliente: int
-    quantidate: int
-    ave: str
-    estado: str= 'Pendente'
+    date_of_regist: date
+    manager: int
+    client: int
+    quantity: int
+    bird: str
+    status: str= 'Pending'
 
 
 @dataclasses.dataclass
 class CanceledOrdersGetResponse:
     order_id: str
-    data_do_entrada: str
-    gestor: int
-    cliente: int
-    quantidate: int
-    ave: str
-    estado: str= 'Canceledo'
+    date_of_regist: date
+    manager: int
+    client: int
+    quantity: int
+    bird: str
+    status: str= 'canceled'

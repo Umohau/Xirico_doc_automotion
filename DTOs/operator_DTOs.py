@@ -22,10 +22,11 @@ class OperatorGetByAdmResponse:
 @dataclasses.dataclass
 class OperatorGetInactiveResponse:
     id: int
-    nome: str
+    name: str
     roll: str
     email: str
-    telefone: str
+    telephone: str
     adress: str
     BI: str
-    status: str='Desactivado'
+    status: str= 'Desactivado'
+    
