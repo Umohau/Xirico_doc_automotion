@@ -3,11 +3,28 @@ from unittest.mock import Mock, PropertyMock
 from Projeto_xirico.infra import Conector
 from Projeto_xirico.repositories.operator_repository import OperatorRepository
 
+@pytest.fixture
+def mock_op_dados():
+    return{
+        'id': 1,
+        'nome': 'umohau',
+        'identificacao': '83689772925',
+        'telefone': '852703882',
+        'email': 'muhauhara3@gmail.com',
+        'endereco': 'moamba, matadouro',
+        'senha':'muhau333',
+        'ADM':True,
+        'ativo':True}
 
 
 @pytest.fixture
-def mock_repo():
-    return Mock()
+def mock_repo(mock_op_dados):
+    repo= Mock()
+    repo.search_inactive.return_value= [mock_op_dados, mock_op_dados]
+    repo.search_all.return_value= [mock_op_dados, mock_op_dados]
+    repo.search_id.return_value= mock_op_dados
+    repo.search_name.return_value= [mock_op_dados, mock_op_dados]
+    return repo
 
 
 @pytest.fixture
