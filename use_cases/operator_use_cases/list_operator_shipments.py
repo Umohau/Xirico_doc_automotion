@@ -8,5 +8,6 @@ class ListOperatorShipments:
         self._repo= repo
 
 
-    def execute(self, operator_id: str) -> list[dict]:
-        return self._repo.get_shipment_gid(operator_id)
+    def execute(self, operator_id: int) -> list[dict]:
+        order= self._repo.get_shipment_gid(operator_id)
+        return order

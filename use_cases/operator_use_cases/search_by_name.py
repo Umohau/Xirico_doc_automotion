@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 import logging
+from ...DTOs.operator_DTOs import OperatorGetResponse, OperatorGetByAdmResponse
 if TYPE_CHECKING:
     from Projeto_xirico.repositories.operator_repository import OperatorRepository
     from Projeto_xirico.profile import Profile
@@ -22,6 +23,7 @@ class SearchByName:
 
     def execute(self, name: str) -> list[dict]:
         operators= self._repo.search_name(name)
+        operator_dto= list()
         try:
             self._audit.auditar(
                 operador= self._profile.id,
@@ -30,4 +32,31 @@ class SearchByName:
             )
         except Exception:
             logger.warning("falha no registo  de auditoria", exc_info= True)
-        return operators
+        logger.debug('convertendo resultados para DTOS')
+        for operator in operators:
+            if operator.get('ADM') == True:
+                roll= 'ADM'
+            else:
+                roll= 'operator'
+            if self._profile.ADM:
+                operator_dto.append(
+                    OperatorGetByAdmResponse(
+                    id= operator['id'],
+                    name= operator['nome'],
+                    roll= roll,
+                    email= operator['email'],
+                    telephone= operator['telefone'],
+                    adress= operator['endereco'],
+                    BI= operator['identificacao']
+                    )
+                )
+            else:
+                operator_dto.append(
+                    OperatorGetResponse(
+                    id= operator['id'],
+                    name= operator['nome'],
+                    roll= roll
+                    )
+                )
+        return operator_dto
+    

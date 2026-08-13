@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 import logging
+from ...DTOs.operator_DTOs import OperatorGetByAdmResponse
 if TYPE_CHECKING:
     from Projeto_xirico.repositories.operator_repository import OperatorRepository
     from Projeto_xirico.profile import Profile
@@ -33,4 +34,18 @@ class SearchByID:
             )
         except Exception:
             logger.warning('falha no registro de auditoria', exc_info= True)
-        return operator
+        if operator.get('ADM') == True:
+            roll= 'ADM'
+        else:
+            roll= 'operator'
+        return OperatorGetByAdmResponse(
+            id= operator['id'],
+            name= operator['nome'],
+            roll= roll,
+            email= operator['email'],
+            telephone= operator['telefone'],
+            adress= operator['endereco'],
+            BI= operator['identificacao']
+        )
+            
+        
